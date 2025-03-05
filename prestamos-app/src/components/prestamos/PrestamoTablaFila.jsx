@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { FaChevronDown, FaEdit, FaTrash } from "react-icons/fa"; // Iconos
+import { FaChevronDown, FaEdit, FaTrash, FaSyncAlt } from "react-icons/fa"; // Iconos
 
-const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEstado }) => {
+const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEstado, onActualizarPrestamo }) => {
   const [isOpen, setIsOpen] = useState(false); // Estado para controlar el dropdown
   const estadosPosibles = [
     { valor: "APROBADO", etiqueta: "Aprobado" },
@@ -16,6 +16,9 @@ const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEs
       {/* ID */}
       <td className="px-6 py-4 text-center">{prestamo.id}</td>
 
+      {/* ID Cliente */}
+      <td className="px-6 py-4 text-center">{prestamo.clienteId}</td>
+
       {/* Monto */}
       <td className="px-6 py-4 text-center">{prestamo.monto}</td>
 
@@ -23,22 +26,24 @@ const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEs
       <td className="px-6 py-4 text-center">{prestamo.estado}</td>
 
       {/* Acciones */}
-      <td className="px-6 py-4 flex gap-2 justify-center items-center">
+      <td className="px-6 py-4 flex gap-4 justify-center items-center">
         {/* Botón para ver detalles */}
         <button
-          className="text-blue-500 hover:underline flex items-center gap-1"
+          className="text-blue-500 hover:text-blue-700"
           onClick={() => onVerDetalles(prestamo.id)}
+          title="Ver Detalles"
         >
-          <FaEdit /> Ver Detalles
+          <FaEdit size={20} />
         </button>
 
         {/* Dropdown para actualizar el estado */}
         <div className="relative inline-block text-left">
           <button
-            className="flex items-center gap-1 bg-gray-200 px-3 py-1 rounded cursor-pointer"
+            className="text-indigo-500 hover:text-indigo-700"
             onClick={() => setIsOpen(!isOpen)}
+            title="Cambiar Estado"
           >
-            Cambiar Estado <FaChevronDown />
+            <FaChevronDown size={20} />
           </button>
           {isOpen && (
             <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-10 dark:bg-gray-800 dark:border-gray-700">
@@ -58,12 +63,22 @@ const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEs
           )}
         </div>
 
+        {/* Botón para actualizar préstamo */}
+        <button
+          className="text-green-500 hover:text-green-700"
+          onClick={() => onActualizarPrestamo()}
+          title="Actualizar Préstamo"
+        >
+          <FaSyncAlt size={20} />
+        </button>
+
         {/* Botón para eliminar */}
         <button
-          className="text-red-500 hover:underline flex items-center gap-1"
+          className="text-red-500 hover:text-red-700"
           onClick={() => onEliminar(prestamo.id)}
+          title="Eliminar"
         >
-          <FaTrash /> Eliminar
+          <FaTrash size={20} />
         </button>
       </td>
     </tr>

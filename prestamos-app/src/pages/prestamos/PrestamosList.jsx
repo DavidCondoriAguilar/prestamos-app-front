@@ -4,9 +4,11 @@ import { toast } from "react-toastify"; // Para notificaciones
 import "react-toastify/dist/ReactToastify.css";
 import ModalDetallesPrestamo from "../../components/prestamos/ModalDetallesPrestamo";
 import PrestamoTablaFila from "../../components/prestamos/PrestamoTablaFila";
+import ActualizarPrestamoModal from "../../components/prestamos/ActualizarPrestamoModal";
 
 const PrestamosList = ({ prestamos, onEliminar }) => {
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null); // Estado para el modal de detalles
+  const [isModalOpen, setIsModalOpen] = useState(false); // Estado para el modal de actualización
 
   // Función para abrir el modal de detalles
   const handleVerDetalles = async (id) => {
@@ -20,6 +22,18 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
 
   // Función para cerrar el modal de detalles
   const handleCloseModal = () => {
+    setPrestamoSeleccionado(null);
+  };
+
+  // Función para abrir el modal de actualización
+  const handleAbrirModalActualizar = (prestamo) => {
+    setPrestamoSeleccionado(prestamo);
+    setIsModalOpen(true);
+  };
+
+  // Función para cerrar el modal de actualización
+  const handleCerrarModalActualizar = () => {
+    setIsModalOpen(false);
     setPrestamoSeleccionado(null);
   };
 
@@ -52,7 +66,7 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
   return (
     <div className="mb-6 overflow-x-auto">
       {/* Título */}
-      <h2 className="text-3xl font-bold text-white mb-6 text-center">Lista de Préstamos</h2>
+      <h2 className="text-3xl font-bold text-center text-white mb-6">Lista de Préstamos</h2>
 
       {/* Tabla */}
       <div className="overflow-x-auto shadow-md sm:rounded-lg">
@@ -60,10 +74,11 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
           {/* Encabezado */}
           <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
             <tr>
-              <th scope="col" className="px-6 py-3">ID</th>
-              <th scope="col" className="px-6 py-3">Monto</th>
-              <th scope="col" className="px-6 py-3">Estado</th>
-              <th scope="col" className="px-6 py-3">Acciones</th>
+              <th scope="col" className="px-6 py-3 text-center">ID</th>
+              <th scope="col" className="px-6 py-3 text-center">ID Cliente</th>
+              <th scope="col" className="px-6 py-3 text-center">Monto</th>
+              <th scope="col" className="px-6 py-3 text-center">Estado</th>
+              <th scope="col" className="px-6 py-3 text-center">Acciones</th>
             </tr>
           </thead>
 
@@ -75,7 +90,8 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
                 prestamo={prestamo}
                 onVerDetalles={handleVerDetalles}
                 onEliminar={handleEliminarPrestamo}
-                onActualizarEstado={handleActualizarEstado} // Pasa la función para actualizar el estado
+                onActualizarEstado={handleActualizarEstado}
+                onActualizarPrestamo={() => handleAbrirModalActualizar(prestamo)} // Nuevo evento
               />
             ))}
           </tbody>
@@ -87,6 +103,16 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
         <ModalDetallesPrestamo
           prestamo={prestamoSeleccionado}
           onClose={handleCloseModal}
+        />
+      )}
+
+      {/* Modal de Actualización */}
+      {isModalOpen && prestamoSeleccionado && (
+        <ActualizarPrestamoModal
+          prestamo={prestamoSeleccionado}
+          isOpen={isModalOpen}
+          onClose={handleCerrarModalActualizar}
+          onActualizado={onEliminar} // Refrescar la lista después de actualizar
         />
       )}
     </div>

@@ -5,96 +5,105 @@ import {
   calcularMontoRestante,
 } from "../../api/pagoApi";
 import { toast } from "react-toastify";
-import RemainingAmountDisplay from "../../components/pagos/RemainingAmountDisplay";
-import RefreshListButton from "../../components/pagos/RefreshListButton";
-import PaymentList from "../../components/pagos/PaymentList";
-import PaymentFormModal from "../../components/pagos/PaymentFormModal";
+import MontoRestante from "../../components/pagos/MontoRestante";
+import BotonActualizarLista from "../../components/pagos/BotonActualizarLista";
+import ListaPagos from "../../components/pagos/ListaPagos";
+import ModalRegistroPago from "../../components/pagos/ModalRegistroPago";
 
 const PagosPage = () => {
-  const [payments, setPayments] = useState([]); // Lista de pagos
-  const [remainingAmount, setRemainingAmount] = useState(null); // Monto restante del préstamo
+  const [pagos, setPagos] = useState([]); // Lista de pagos
+  const [montoRestante, setMontoRestante] = useState(null); // Monto restante del préstamo
   const [isModalOpen, setIsModalOpen] = useState(false); // Estado del modal
-  const [loanId, setLoanId] = useState(1); // ID del préstamo seleccionado
+  const [idPrestamo, setIdPrestamo] = useState(1); // ID del préstamo seleccionado
 
   // Cargar pagos al montar el componente
   useEffect(() => {
-    fetchPayments();
+    cargarPagos();
   }, []);
 
   // Función para cargar los pagos de un préstamo específico
-  const fetchPayments = async () => {
-    try {
-      const data = await obtenerPagosPorPrestamo(loanId);
-      console.log("Datos recibidos del backend:", data); // Agrega este log
-      setPayments(data || []);
-    } catch (error) {
-      toast.error("Error loading loan payments.");
+  // Función para cargar los pagos de un préstamo específico
+const cargarPagos = async () => {
+  try {
+    const response = await obtenerPagosPorPrestamo(idPrestamo);
+    console.log("Datos recibidos del backend:", response); // Log para depuración
+
+    // Acceder a la propiedad 'content' para obtener los pagos
+    if (response && response.content) {
+      setPagos(response.content || []);
+    } else {
+      console.error("La respuesta del backend no contiene la propiedad 'content'.");
+      setPagos([]);
     }
-  };
+  } catch (error) {
+    console.error("Error al cargar los pagos del préstamo:", error);
+    toast.error("Error al cargar los pagos del préstamo.");
+  }
+};
 
   // Función para calcular el monto restante de un préstamo
-  const handleCalculateRemainingAmount = async () => {
+  const calcularMontoRestantePrestamo = async () => {
     try {
-      const amount = await calcularMontoRestante(loanId);
-      setRemainingAmount(amount);
-      toast.success("Remaining amount calculated successfully.");
+      const monto = await calcularMontoRestante(idPrestamo);
+      setMontoRestante(monto);
+      toast.success("Monto restante calculado correctamente.");
     } catch (error) {
-      toast.error("Error calculating remaining amount.");
+      toast.error("Error al calcular el monto restante.");
     }
   };
 
   // Función para registrar un nuevo pago
-  const handleRegisterPayment = async (payment) => {
+  const registrarNuevoPago = async (pago) => {
     try {
-      await registrarPago(loanId, payment);
-      toast.success("Payment registered successfully.");
-      fetchPayments(); // Actualizar la lista de pagos
+      await registrarPago(idPrestamo, pago);
+      toast.success("Pago registrado correctamente.");
+      cargarPagos(); // Actualizar la lista de pagos
       setIsModalOpen(false); // Cerrar el modal
     } catch (error) {
-      toast.error("Error registering payment.");
+      toast.error("Error al registrar el pago.");
     }
   };
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
-      {/* Header */}
+      {/* Encabezado */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Payment Management</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Gestión de Pagos</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition duration-300"
         >
-          Register New Payment
+          Registrar Nuevo Pago
         </button>
       </div>
 
-      {/* Action Section */}
+      {/* Sección de Acciones */}
       <div className="flex justify-between items-center mb-4">
-        {/* Display Remaining Amount */}
-        <RemainingAmountDisplay remainingAmount={remainingAmount} />
+        {/* Mostrar Monto Restante */}
+        <MontoRestante montoRestante={montoRestante} />
 
-        {/* Button to Calculate Remaining Amount */}
+        {/* Botón para Calcular Monto Restante */}
         <button
-          onClick={handleCalculateRemainingAmount}
+          onClick={calcularMontoRestantePrestamo}
           className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
         >
-          Calculate Remaining Amount
+          Calcular Monto Restante
         </button>
 
-        {/* Button to Refresh List */}
-        <RefreshListButton onRefresh={fetchPayments} />
+        {/* Botón para Actualizar Lista */}
+        <BotonActualizarLista onRefresh={cargarPagos} />
       </div>
 
-      {/* Payment List */}
+      {/* Lista de Pagos */}
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <PaymentList payments={payments} onRefresh={fetchPayments} />
+        <ListaPagos pagos={pagos} onRefresh={cargarPagos} />
       </div>
 
-      {/* Modal for Registering Payments */}
-      <PaymentFormModal
+      {/* Modal para Registrar Pagos */}
+      <ModalRegistroPago
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onPaymentRegistered={handleRegisterPayment}
+        onPagoRegistrado={registrarNuevoPago}
       />
     </div>
   );

@@ -1,4 +1,6 @@
+import React from "react";
 import { FaUsers, FaHandHoldingUsd, FaShieldAlt } from "react-icons/fa";
+import SimuladorPrestamos from "../components/prestamos/SimuladorPrestamos";
 
 const Home = () => {
   return (
@@ -35,6 +37,11 @@ const Home = () => {
             Protegemos tu información con la mejor tecnología para garantizar seguridad en cada transacción.
           </p>
         </div>
+      </div>
+
+      {/* Simulador de Préstamos */}
+      <div className="mt-12 w-full max-w-2xl mx-auto">
+        <SimuladorPrestamos />
       </div>
 
       {/* Botón de Registro */}
