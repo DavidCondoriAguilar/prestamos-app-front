@@ -1,0 +1,5 @@
+![prestamoPorId](https://github.com/user-attachments/assets/2750c118-d930-43b2-ab48-54a6fac6a2f5)
+![prestamoDetail](https://github.com/user-attachments/assets/52a1d435-75d6-4bfa-bd7c-f8fcb6d5fc0c)
+![noti](https://github.com/user-attachments/assets/63967d50-e8c0-48f7-ae8a-4e438ca6b66a)
+![list](https://github.com/user-attachments/assets/da1be51a-78e1-42cc-be06-02cfb5af0982)
+![delete](https://github.com/user-attachments/assets/81b8e73b-18f6-4312-a905-fbe96a81c1a2)
