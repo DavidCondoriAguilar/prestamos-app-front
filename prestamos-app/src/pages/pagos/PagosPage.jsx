@@ -23,16 +23,21 @@ const PagosPage = () => {
 
   // Función para cargar los pagos de un préstamo específico
   // Función para cargar los pagos de un préstamo específico
+// Función para cargar los pagos de un préstamo específico
 const cargarPagos = async () => {
   try {
     const response = await obtenerPagosPorPrestamo(idPrestamo);
     console.log("Datos recibidos del backend:", response); // Log para depuración
 
-    // Acceder a la propiedad 'content' para obtener los pagos
-    if (response && response.content) {
+    // Verificar si la respuesta tiene la propiedad 'content'
+    if (response && Array.isArray(response.content)) {
       setPagos(response.content || []);
+    } else if (Array.isArray(response)) {
+      // Si la respuesta es directamente un array (caso alternativo)
+      setPagos(response || []);
     } else {
-      console.error("La respuesta del backend no contiene la propiedad 'content'.");
+      console.error("La respuesta del backend no tiene el formato esperado.");
+      toast.error("Error: La respuesta del backend no tiene el formato esperado.");
       setPagos([]);
     }
   } catch (error) {

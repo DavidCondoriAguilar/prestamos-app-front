@@ -1,7 +1,7 @@
 import React from "react";
 
 const DashboardLayout = () => {
-  return <div>hidasboard</div>;
+  return <div>BOARDING</div>;
 };
 
 export default DashboardLayout;

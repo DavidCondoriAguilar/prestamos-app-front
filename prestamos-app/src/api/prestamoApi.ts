@@ -1,4 +1,5 @@
 import axios from "axios";
+import { CrearPrestamo } from "../types/prestamoType";
 
 // URL base del backend para préstamos
 const API_URL = "http://localhost:8080/prestamos";
@@ -75,8 +76,16 @@ export const obtenerPrestamoPorId = async (id: number): Promise<Prestamo | null>
  * @param prestamo - Datos del préstamo a crear.
  * @returns Datos del préstamo creado o null si ocurre un error.
  */
-export const crearPrestamo = async (prestamo: Partial<Prestamo>): Promise<Prestamo | null> => {
-  if (!prestamo.clienteId || !prestamo.monto || !prestamo.interes || !prestamo.fechaSolicitud || !prestamo.estado) {
+export const crearPrestamo = async (prestamo: CrearPrestamo): Promise<Prestamo | null> => {
+  console.log("Datos enviados al backend:", prestamo);
+
+  if (
+    !prestamo.clienteId ||
+    !prestamo.monto ||
+    !prestamo.interes ||
+    !prestamo.fechaVencimiento ||
+    !prestamo.estado
+  ) {
     console.error("Datos de préstamo incompletos.");
     return null;
   }

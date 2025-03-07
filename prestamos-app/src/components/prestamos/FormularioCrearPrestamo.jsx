@@ -1,4 +1,4 @@
-import React, { useState } from "react"; // Importa useState aquí
+import React, { useState } from "react";
 
 const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
   const [monto, setMonto] = useState("");
@@ -20,16 +20,16 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
       alert("El interés debe ser mayor que cero");
       return;
     }
-    if (!interesMoratorio || parseFloat(interesMoratorio) < 0) {
-      alert("El interés moratorio no puede ser negativo");
+    if (!interesMoratorio || isNaN(parseFloat(interesMoratorio)) || parseFloat(interesMoratorio) < 0) {
+      alert("El interés moratorio debe ser un número no negativo");
       return;
     }
     if (!fechaVencimiento) {
       alert("La fecha de vencimiento es obligatoria");
       return;
     }
-    if (!clienteId || parseInt(clienteId) <= 0) {
-      alert("El ID del cliente es obligatorio");
+    if (!clienteId || !Number.isInteger(parseInt(clienteId)) || parseInt(clienteId) <= 0) {
+      alert("El ID del cliente debe ser un número entero positivo");
       return;
     }
 
@@ -38,7 +38,7 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
       monto: parseFloat(monto),
       interes: parseFloat(interes),
       interesMoratorio: parseFloat(interesMoratorio),
-      fechaVencimiento,
+      fechaVencimiento: fechaVencimiento, // Enviar directamente el valor del input (formato YYYY-MM-DD)
       estado,
       clienteId: parseInt(clienteId),
     };
