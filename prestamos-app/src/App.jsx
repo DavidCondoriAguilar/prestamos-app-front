@@ -26,8 +26,7 @@ function App() {
             <Route path="/prestamos" element={<PrestamosPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/pagos" element={<PagosPage />} />
-
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/pagos/:prestamoId" element={<PagosPage />} />
 
           </Routes>
         </main>
@@ -35,14 +34,14 @@ function App() {
 
         <ToastContainer
           position="top-right"
-          autoClose={3000} 
+          autoClose={3000}
           hideProgressBar={false}
-          newestOnTop={true} 
-          closeOnClick 
+          newestOnTop={true}
+          closeOnClick
           rtl={false}
-          pauseOnFocusLoss 
-          draggable 
-          pauseOnHover 
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
         />
       </div>
     </BrowserRouter>

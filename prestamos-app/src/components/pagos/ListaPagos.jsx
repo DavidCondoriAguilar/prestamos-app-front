@@ -17,8 +17,8 @@ const ListaPagos = ({ pagos, onRefresh }) => {
             pagos.map((pago) => (
               <tr key={pago.id} className="border-b">
                 <td className="px-4 py-2">{pago.id}</td>
-                <td className="px-4 py-2">${pago.monto.toFixed(2)}</td>
-                <td className="px-4 py-2">{pago.fecha}</td>
+                  <td className="px-4 py-2">${pago.montoPago.toFixed(2)}</td>
+                  <td className="px-4 py-2">{pago.fecha}</td>
               </tr>
             ))
           ) : (

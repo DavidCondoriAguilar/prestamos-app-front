@@ -1,18 +1,9 @@
 import axios from "axios";
-import { CrearPrestamo } from "../types/prestamoType";
+import { CrearPrestamo, Prestamo } from "../types/prestamoType";
 
-// URL base del backend para préstamos
 const API_URL = "http://localhost:8080/prestamos";
 
-// Interfaz para tipar los datos de un préstamo
-interface Prestamo {
-  id?: number; // Opcional porque se genera en el backend
-  clienteId: number;
-  monto: number;
-  interes: number;
-  fechaSolicitud: string;
-  estado: string; // APROBADO, PENDIENTE, etc.
-}
+
 
 /**
  * Función genérica para manejar solicitudes HTTP
@@ -32,6 +23,9 @@ const fetchData = async <T>(
       method,
       data,
     });
+
+    console.log("Respuesta del backend:", response.data);
+
     return { data: response.data as T, error: null };
   } catch (error: any) {
     console.error(`Error en solicitud ${method} a ${url}:`, error.message);

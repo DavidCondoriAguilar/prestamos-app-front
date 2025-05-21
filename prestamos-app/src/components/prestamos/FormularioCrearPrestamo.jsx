@@ -5,7 +5,7 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
   const [interes, setInteres] = useState("");
   const [interesMoratorio, setInteresMoratorio] = useState("");
   const [fechaVencimiento, setFechaVencimiento] = useState("");
-  const [estado, setEstado] = useState("PENDIENTE"); // Estado predeterminado
+  const [estado, setEstado] = useState("PENDIENTE");
   const [clienteId, setClienteId] = useState("");
 
   const handleSubmit = (e) => {

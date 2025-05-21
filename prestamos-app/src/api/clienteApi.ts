@@ -1,16 +1,7 @@
 import axios from "axios";
+import { ActualizarCliente, Cliente, CrearCliente } from "../types/clienteType";
 
-// URL base del backend para clientes
 const API_URL = "http://localhost:8080/clientes";
-
-// Interfaz para tipar los datos de un cliente
-interface Cliente {
-  id?: number; // Opcional porque se genera en el backend
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono?: string; // Opcional
-}
 
 /**
  * Función genérica para manejar solicitudes HTTP
@@ -74,11 +65,8 @@ export const getClienteById = async (id: number): Promise<Cliente | null> => {
  * @param cliente - Datos del cliente a crear.
  * @returns Datos del cliente creado o null si ocurre un error.
  */
-export const createCliente = async (cliente: Partial<Cliente>): Promise<Cliente | null> => {
-  if (!cliente.nombre || !cliente.apellido || !cliente.email) {
-    console.error("Datos de cliente incompletos.");
-    return null;
-  }
+export const createCliente = async (cliente: CrearCliente): Promise<Cliente | null> => {
+  console.log("Datos enviados al backend:", cliente);
 
   const { data, error } = await fetchData<Cliente>(API_URL, "POST", cliente);
   if (error) {
@@ -94,13 +82,16 @@ export const createCliente = async (cliente: Partial<Cliente>): Promise<Cliente 
  * @param cliente - Datos actualizados del cliente.
  * @returns Datos del cliente actualizado o null si ocurre un error.
  */
-export const updateCliente = async (id: number, cliente: Partial<Cliente>): Promise<Cliente | null> => {
+export const updateCliente = async (
+  id: number,
+  cliente: ActualizarCliente
+): Promise<Cliente | null> => {
   if (!id || id <= 0) {
     console.error("ID de cliente inválido.");
     return null;
   }
 
-  if (!cliente.nombre && !cliente.apellido && !cliente.email && !cliente.telefono) {
+  if (!cliente.nombre && !cliente.correo && !cliente.cuenta) {
     console.error("No se proporcionaron datos para actualizar.");
     return null;
   }

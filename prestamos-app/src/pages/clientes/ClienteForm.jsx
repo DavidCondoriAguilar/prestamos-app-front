@@ -15,7 +15,6 @@ const ClienteForm = ({ onClose, onCreado }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name.startsWith("cuenta.")) {
-      // Manejar campos anidados como "cuenta.numeroCuenta"
       const campoCuenta = name.split(".")[1];
       setCliente((prev) => ({
         ...prev,
@@ -36,7 +35,7 @@ const ClienteForm = ({ onClose, onCreado }) => {
     e.preventDefault();
 
     // Validar campos
-    if (!cliente.nombre || !cliente.correo || !cliente.cuenta.numeroCuenta || cliente.cuenta.saldo <= 0) {
+    if (!cliente.nombre || !cliente.email || !cliente.cuenta.numeroCuenta) {
       toast.error("Por favor, completa todos los campos correctamente", {
         position: "top-right",
         autoClose: 3000,
@@ -63,12 +62,8 @@ const ClienteForm = ({ onClose, onCreado }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      {/* Contenedor del Modal */}
       <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-md">
-        {/* Título */}
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Crear Nuevo Cliente</h2>
-
-        {/* Formulario */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* Campo de Nombre */}
           <div>
@@ -82,20 +77,20 @@ const ClienteForm = ({ onClose, onCreado }) => {
               value={cliente.nombre}
               onChange={handleChange}
               placeholder="Nombre del cliente"
-              className="mt-1 block w-full px-3 py-2  text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 text-black border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               required
             />
           </div>
 
           {/* Campo de Correo */}
           <div>
-            <label htmlFor="correo" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Correo
             </label>
             <input
               type="email"
-              id="correo"
-              name="correo"
+              id="email"
+              name="email"
               value={cliente.correo}
               onChange={handleChange}
               placeholder="Correo electrónico"
@@ -140,7 +135,6 @@ const ClienteForm = ({ onClose, onCreado }) => {
 
           {/* Botones de Acción */}
           <div className="flex justify-end gap-2 mt-4">
-            {/* Botón Cancelar */}
             <button
               type="button"
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition duration-200"
@@ -148,7 +142,6 @@ const ClienteForm = ({ onClose, onCreado }) => {
             >
               Cancelar
             </button>
-            {/* Botón Crear */}
             <button
               type="submit"
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-200"

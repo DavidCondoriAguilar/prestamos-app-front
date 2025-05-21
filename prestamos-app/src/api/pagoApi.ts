@@ -82,23 +82,99 @@ export const obtenerPagoPorId = async (id: number): Promise<Pago | null> => {
  * @param pago - Datos del pago a registrar.
  * @returns Datos del pago registrado o null si ocurre un error.
  */
-export const registrarPago = async (prestamoId: number, pago: Partial<Pago>): Promise<Pago | null> => {
-  if (!prestamoId || prestamoId <= 0) {
-    console.error("ID de préstamo inválido.");
-    return null;
+export const registrarPago = async (prestamoId: number, pagoData: Omit<Pago, 'id' | 'prestamoId'>): Promise<Pago> => {
+  console.log('Datos recibidos para registrar pago:', { prestamoId, pagoData });
+  
+  // Validar que el prestamoId sea un número válido
+  const idPrestamo = Number(prestamoId);
+  if (isNaN(idPrestamo) || idPrestamo <= 0) {
+    const errorMsg = `ID de préstamo inválido: ${prestamoId}`;
+    console.error(errorMsg);
+    throw new Error(errorMsg);
   }
 
-  if (!pago.montoPago || !pago.fecha) {
-    console.error("Datos de pago incompletos.");
-    return null;
+  // Validar el monto del pago
+  const montoPago = Number(pagoData.montoPago);
+  if (isNaN(montoPago) || montoPago <= 0) {
+    const errorMsg = `Monto de pago inválido: ${pagoData.montoPago}`;
+    console.error(errorMsg);
+    throw new Error('El monto del pago debe ser mayor a cero');
   }
 
-  const { data, error } = await fetchData<Pago>(`${API_URL}/${prestamoId}`, "POST", pago);
-  if (error) {
-    console.error(error);
-    return null;
+  // Asegurar que la fecha tenga el formato correcto
+  const fechaPago = pagoData.fecha || new Date().toISOString().split('T')[0];
+
+  // Crear el objeto de pago que coincida exactamente con PagoModel del backend
+  const pagoParaEnviar = {
+    // El ID no es necesario para crear un nuevo pago
+    montoPago: montoPago, // Usamos montoPago que es el nombre del campo en PagoModel
+    fecha: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+    prestamoId: idPrestamo // El ID del préstamo al que pertenece el pago
+  };
+
+  console.log('Enviando pago al servidor:', pagoParaEnviar);
+
+  try {
+    // Según el ejemplo de Postman, la URL debe incluir el ID del préstamo
+    const url = `${API_URL}/${idPrestamo}`;
+    
+    console.log('Enviando pago a:', url);
+    console.log('Datos del pago:', pagoParaEnviar);
+    
+    const response = await axios.post<Pago>(
+      url,
+      pagoParaEnviar,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+      }
+    );
+    
+    if (!response.data) {
+      throw new Error('No se recibieron datos en la respuesta del servidor');
+    }
+    
+    console.log('Pago registrado exitosamente:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error completo al registrar pago:', error);
+    
+    let errorMessage = 'Error al registrar el pago';
+    
+    if (error.response) {
+      // El servidor respondió con un error
+      console.error('Respuesta de error del servidor:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers,
+      });
+      
+      // Intentar obtener un mensaje de error más descriptivo
+      if (error.response.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else {
+          errorMessage = `Error ${error.response.status}: ${error.response.statusText}`;
+        }
+      }
+    } else if (error.request) {
+      // La solicitud fue hecha pero no se recibió respuesta
+      console.error('No se recibió respuesta del servidor:', error.request);
+      errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a internet.';
+    } else {
+      // Error en la configuración de la solicitud
+      console.error('Error al configurar la solicitud:', error.message);
+      errorMessage = `Error de configuración: ${error.message}`;
+    }
+    
+    throw new Error(errorMessage);
   }
-  return data || null;
 };
 
 /**

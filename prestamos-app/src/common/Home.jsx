@@ -1,10 +1,14 @@
 import React from "react";
-import { FaUsers, FaHandHoldingUsd, FaShieldAlt } from "react-icons/fa";
+import { FaUsers, FaHandHoldingUsd, FaShieldAlt, FaArrowDown } from "react-icons/fa";
 import SimuladorPrestamos from "../components/prestamos/SimuladorPrestamos";
 
 const Home = () => {
+  const handleScrollToSimulador = () => {
+    document.getElementById("simulador").scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
-    <section className="flex flex-col items-center text-center py-20 px-8 bg-gradient-to-r from-blue-900 to-blue-600 text-white">
+    <section className="flex flex-col items-center text-center py-20 px-8 bg-gradient-to-r from-blue-900 to-blue-600 text-white relative">
       <h2 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">
         La forma más rápida y segura de gestionar tus préstamos
       </h2>
@@ -40,13 +44,21 @@ const Home = () => {
       </div>
 
       {/* Simulador de Préstamos */}
-      <div className="mt-12 w-full max-w-2xl mx-auto">
+      <div id="simulador" className="mt-12 w-full max-w-2xl mx-auto">
         <SimuladorPrestamos />
       </div>
 
       {/* Botón de Registro */}
       <button className="mt-10 px-8 py-3 bg-yellow-400 text-black text-lg font-semibold rounded-xl hover:bg-yellow-500 transition-all shadow-md">
         ¡Regístrate Gratis!
+      </button>
+
+      {/* Ícono flotante para desplazarse al simulador */}
+      <button
+        onClick={handleScrollToSimulador}
+        className="fixed bottom-10 right-10 bg-yellow-400 text-black p-4 rounded-full shadow-lg hover:bg-yellow-500 transition-all animate-bounce"
+      >
+        <FaArrowDown className="text-2xl" />
       </button>
     </section>
   );

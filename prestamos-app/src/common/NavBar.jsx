@@ -21,7 +21,7 @@ const NavBar = () => {
         <nav className="hidden md:block">
           <ul className="flex space-x-6">
           <li>
-              <Link to="/home" className="hover:text-blue-400 transition">
+              <Link to="/" className="hover:text-blue-400 transition">
                 Home
               </Link>
             </li>
@@ -54,6 +54,15 @@ const NavBar = () => {
       {open && (
         <nav className="md:hidden mt-4">
           <ul className="flex flex-col space-y-2">
+            <li>
+              <Link
+                to="/"
+                className="block hover:text-blue-400 transition"
+                onClick={() => setOpen(false)}
+              >
+                Home
+              </Link>
+            </li>
             <li>
               <Link
                 to="/clientes"
