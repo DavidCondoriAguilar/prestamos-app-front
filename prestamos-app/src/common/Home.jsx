@@ -44,7 +44,7 @@ const Home = () => {
       </div>
 
       {/* Simulador de Préstamos */}
-      <div id="simulador" className="mt-12 w-full max-w-2xl mx-auto">
+      <div id="simulador" className="mt-66 w-full max-w-2xl mx-auto">
         <SimuladorPrestamos />
       </div>
 
@@ -56,7 +56,7 @@ const Home = () => {
       {/* Ícono flotante para desplazarse al simulador */}
       <button
         onClick={handleScrollToSimulador}
-        className="fixed bottom-10 right-10 bg-yellow-400 text-black p-4 rounded-full shadow-lg hover:bg-yellow-500 transition-all animate-bounce"
+        className="fixed bottom-10 right-10 bg-yellow-400 text-black p-4 rounded-full shadow-lg hover:bg-yellow-500 transition-all animate-bounce cursor-pointer z-50"
       >
         <FaArrowDown className="text-2xl" />
       </button>

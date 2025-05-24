@@ -5,7 +5,7 @@ import useClientes from "../../hooks/useClientes";
 import BuscadorClientes from "../../components/clientes/BuscadorClientes";
 import ListaClientes from "../../components/clientes/ListaClientes";
 import ModalDetallesCliente from "../../components/clientes/ModalDetallesCliente";
-import { createCliente } from "../../api/clienteApi";
+import { createCliente, deleteCliente } from "../../api/clienteApi";
 import ModalCrearCliente from "../../components/clientes/ModalCrearCliente";
 import { FiPlus, FiChevronLeft, FiChevronRight, FiUser, FiMail, FiPhone, FiCalendar } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -66,6 +66,19 @@ const ClienteList = () => {
     } catch (error) {
       console.error("Error al crear el cliente:", error);
       toast.error(error.message || "Error al crear el cliente.");
+    }
+  };
+
+  // Función para eliminar un cliente
+  const handleEliminarCliente = async (id) => {
+    try {
+      await deleteCliente(id);
+      // Actualizar el estado eliminando el cliente
+      setClientes(prevClientes => prevClientes.filter(cliente => cliente.id !== id));
+      toast.success("Cliente eliminado correctamente.");
+    } catch (error) {
+      console.error("Error al eliminar el cliente:", error);
+      toast.error(error.message || "Error al eliminar el cliente.");
     }
   };
 
@@ -142,7 +155,8 @@ const ClienteList = () => {
                 {clientesPaginados.length > 0 ? (
                   <ListaClientes 
                     clientes={clientesPaginados} 
-                    onVerDetalles={handleVerDetalles} 
+                    onVerDetalles={handleVerDetalles}
+                    onEliminar={handleEliminarCliente}
                     formatDate={formatDate}
                   />
                 ) : (

@@ -1,9 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import formatCurrency from "../../utils/formatCurrency";
-import { FiUser, FiMail, FiDollarSign, FiEye, FiCreditCard } from "react-icons/fi";
+import { FiUser, FiMail, FiDollarSign, FiEye, FiCreditCard, FiTrash2 } from "react-icons/fi";
+import ConfirmationDelete from "./ConfirmationDelete";
 
-const ListaClientes = ({ clientes, onVerDetalles, formatDate }) => {
+const ListaClientes = ({ clientes, onVerDetalles, onEliminar, formatDate }) => {
+  const [clienteAEliminar, setClienteAEliminar] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const handleEliminarClick = (e, cliente) => {
+    e.stopPropagation();
+    setClienteAEliminar(cliente);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmarEliminar = () => {
+    if (clienteAEliminar) {
+      onEliminar(clienteAEliminar.id);
+      setClienteAEliminar(null);
+    }
+  };
   // Función para obtener las iniciales del nombre
   const getInitials = (name) => {
     if (!name) return "??";
@@ -40,9 +56,10 @@ const ListaClientes = ({ clientes, onVerDetalles, formatDate }) => {
   }
 
   return (
-    <AnimatePresence>
-      <ul className="divide-y divide-gray-700/50">
-        {clientes.map((cliente, index) => (
+    <>
+      <AnimatePresence>
+        <ul className="divide-y divide-gray-700/50">
+          {clientes.map((cliente, index) => (
           <motion.li
             key={cliente.id}
             initial={{ opacity: 0, y: 20 }}
@@ -86,7 +103,7 @@ const ListaClientes = ({ clientes, onVerDetalles, formatDate }) => {
               </div>
 
               {/* Acciones */}
-              <div className="col-span-4 md:col-span-2 flex justify-end">
+              <div className="col-span-4 md:col-span-2 flex justify-end space-x-2">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -96,12 +113,31 @@ const ListaClientes = ({ clientes, onVerDetalles, formatDate }) => {
                   <FiEye className="mr-1.5 group-hover:text-blue-400" />
                   <span className="hidden sm:inline">Ver</span>
                 </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => handleEliminarClick(e, cliente)}
+                  className="inline-flex items-center px-3 py-1.5 border border-gray-600 rounded-lg text-sm font-medium text-gray-300 bg-gray-800/50 hover:bg-red-600/20 hover:border-red-500/50 transition-colors duration-200 group"
+                >
+                  <FiTrash2 className="group-hover:text-red-400" />
+                  <span className="hidden sm:inline ml-1.5">Eliminar</span>
+                </motion.button>
               </div>
             </div>
           </motion.li>
         ))}
-      </ul>
-    </AnimatePresence>
+        </ul>
+      </AnimatePresence>
+
+      {/* Modal de confirmación de eliminación */}
+      <ConfirmationDelete
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmarEliminar}
+        title={`¿Eliminar a ${clienteAEliminar?.nombre || 'este cliente'}?`}
+        message={`¿Estás seguro de que deseas eliminar a ${clienteAEliminar?.nombre || 'este cliente'}? Esta acción no se puede deshacer.`}
+      />
+    </>
   );
 };
 

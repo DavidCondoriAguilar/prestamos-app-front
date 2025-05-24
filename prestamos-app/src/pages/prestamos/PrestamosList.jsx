@@ -79,7 +79,7 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6">
       {/* Tarjeta contenedora */}
-      <div className="bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden">
+      <div className="bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border-0">
         {/* Encabezado */}
         <div className="px-6 py-5 border-b border-gray-700/50 bg-gradient-to-r from-gray-800 to-gray-900/80">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
