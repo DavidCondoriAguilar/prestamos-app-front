@@ -8,7 +8,7 @@ const Home = () => {
   };
 
   return (
-    <section className="flex flex-col items-center text-center py-20 px-8 bg-gradient-to-r from-blue-900 to-blue-600 text-white relative">
+    <section className="flex flex-col items-center text-center py-20 px-8 bg-gradient-to-r  to-blue-600 text-white relative">
       <h2 className="text-4xl md:text-5xl font-bold mb-6 drop-shadow-lg">
         La forma más rápida y segura de gestionar tus préstamos
       </h2>

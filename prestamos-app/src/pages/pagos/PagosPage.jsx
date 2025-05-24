@@ -78,6 +78,14 @@ const cargarPagos = async () => {
     // La API devuelve un array directo según pagoApi.ts
     if (Array.isArray(response)) {
       setPagos(response);
+      
+      // Calcular el monto restante después de cargar los pagos
+      if (prestamoSeleccionado) {
+        const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
+        const montoPagado = response.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0);
+        const montoRestanteCalculado = Math.max(0, montoTotal - montoPagado);
+        setMontoRestante(montoRestanteCalculado);
+      }
     } else {
       console.error("La respuesta del backend no es un array:", response);
       toast.error("Error: Formato de respuesta inesperado");
@@ -94,13 +102,23 @@ const cargarPagos = async () => {
 
   // Función para calcular el monto restante de un préstamo
   const calcularMontoRestantePrestamo = async () => {
-    if (!prestamoId) return;
+    if (!prestamoId || !prestamoSeleccionado) return;
     
     try {
       setCargando(true);
-      const monto = await calcularMontoRestante(Number(prestamoId));
-      setMontoRestante(monto);
-      return monto;
+      const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
+      let montoPagado = 0;
+      
+      // Asegurarse de que los pagos estén cargados
+      if (pagos && pagos.length > 0) {
+        montoPagado = pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0);
+      }
+      
+      // Calcular el monto restante (no puede ser menor que 0)
+      const montoRestanteCalculado = Math.max(0, montoTotal - montoPagado);
+      
+      setMontoRestante(montoRestanteCalculado);
+      return montoRestanteCalculado;
     } catch (error) {
       console.error("Error al calcular el monto restante:", error);
       toast.error("Error al calcular el monto restante");
@@ -205,17 +223,17 @@ const cargarPagos = async () => {
   // Vista de selección de préstamo
   if (!prestamoId) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+      <div className="p-6 min-h-screen">
+        <div className="container mx-auto px-4 py-8 bg-gray-800/50 rounded-lg border border-gray-700 p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Seleccione un Préstamo</h1>
+              <h1 className="text-2xl font-bold text-blue-400">Seleccione un Préstamo</h1>
               <p className="text-gray-600 mt-1">Seleccione un préstamo para ver su historial de pagos</p>
             </div>
             <div className="mt-4 md:mt-0">
               <button
                 onClick={() => navigate('/prestamos')}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -235,55 +253,71 @@ const cargarPagos = async () => {
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               placeholder="Buscar por nombre de cliente o ID de préstamo..."
-              className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="pl-10 w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
 
           {/* Lista de préstamos */}
           {cargando ? (
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
               <p className="mt-2 text-gray-600">Cargando préstamos...</p>
             </div>
           ) : prestamosFiltrados.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {prestamosFiltrados.map((prestamo) => (
-                <div 
+                <button
                   key={prestamo.id}
-                  className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-all overflow-hidden"
+                  className="group bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-700"
                 >
                   <div 
                     onClick={() => seleccionarPrestamo(prestamo)}
-                    className="cursor-pointer"
+                    className="cursor-pointer p-5"
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="font-semibold text-lg text-gray-800">
-                          Préstamo #{prestamo.id}
+                        <div className="text-xs font-medium text-blue-400 mb-1">PRÉSTAMO</div>
+                        <h3 className="text-xl font-bold text-white">
+                          #{prestamo.id}
                         </h3>
-                        <p className="text-sm text-gray-500">Cliente ID: {prestamo.clienteId}</p>
+                        <p className="text-sm text-gray-400 mt-1">Cliente ID: {prestamo.clienteId}</p>
                       </div>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        prestamo.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-800' :
-                        prestamo.estado === 'PAGADO' || prestamo.estado === 'APROBADO' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        prestamo.estado === 'PENDIENTE' ? 'bg-yellow-500/20 text-yellow-400' :
+                        prestamo.estado === 'PAGADO' ? 'bg-green-500/20 text-green-400' :
+                        prestamo.estado === 'APROBADO' ? 'bg-blue-500/20 text-blue-400' :
+                        'bg-gray-500/20 text-gray-400'
                       }`}>
                         {prestamo.estado || 'SIN ESTADO'}
                       </span>
                     </div>
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="text-gray-600">
-                        S/ {prestamo.monto ? prestamo.monto.toFixed(2) : '0.00'}
+                    
+                    <div className="mt-6 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-400">Monto Total</span>
+                        <span className="text-lg font-bold text-white">
+                          S/ {prestamo.monto ? prestamo.monto.toFixed(2) : '0.00'}
+                        </span>
                       </div>
-                      <div className="text-gray-500 text-sm">
-                        ID: {prestamo.id}
+                      <div className="h-px bg-gray-700 my-2"></div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Fecha de Préstamo</span>
+                        <span className="text-gray-300">
+                          {prestamo.fechaCreacion ? new Date(prestamo.fechaCreacion).toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'No especificada'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Tasa de Interés</span>
+                        <span className="text-gray-300">
+                          {prestamo.interes !== undefined ? `${prestamo.interes}%` : 'No especificada'}
+                        </span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Botón de pago */}
                   {prestamo.estado !== 'PAGADO' && (
-                    <div className="mt-4 pt-3 border-t border-gray-100">
+                    <div className="px-5 pb-5 pt-3 border-t border-gray-700">
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
@@ -293,22 +327,22 @@ const cargarPagos = async () => {
                             setIsModalOpen(true);
                           }, 100);
                         }}
-                        className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors"
+                        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-blue-500/20"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Registrar Pago
                       </button>
                     </div>
                   )}
-                </div>
+                </button>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
+            <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700 shadow-lg">
               <p className="text-gray-500">
-                {busqueda ? 'No se encontraron préstamos que coincidan con la búsqueda' : 'No hay préstamos disponibles'}
+                <p className="text-gray-300">{busqueda ? 'No se encontraron préstamos que coincidan con la búsqueda' : 'No hay préstamos disponibles'}</p>
               </p>
             </div>
           )}
@@ -318,20 +352,38 @@ const cargarPagos = async () => {
   }
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="p-4 sm:p-6 lg:p-8 bg-gray-900 min-h-screen">
       {/* Encabezado */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Gestión de Pagos</h1>
-          <p className="text-sm text-gray-600">Préstamo ID: {prestamoId}</p>
+          <div className="flex items-center">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="mr-3 p-1.5 rounded-full hover:bg-gray-800 text-gray-400 hover:text-white transition-colors duration-200"
+              title="Volver atrás"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white">Gestión de Pagos</h1>
+              <div className="flex items-center mt-1">
+                <span className="text-sm text-gray-400">Préstamo ID: </span>
+                <span className="ml-1 px-2 py-0.5 bg-indigo-900/50 text-indigo-300 text-xs font-medium rounded-full border border-indigo-700">
+                  #{prestamoId}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
         {prestamoSeleccionado && prestamoSeleccionado.estado !== 'PAGADO' && (
           <button
             onClick={() => setIsModalOpen(true)}
             disabled={cargando}
-            className="flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className="flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-lg shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <svg className="w-4 h-4 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
             Registrar Pago
@@ -342,59 +394,75 @@ const cargarPagos = async () => {
       {/* Sección de resumen con estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Tarjeta de monto total */}
-        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-6 rounded-xl shadow-lg">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm opacity-80">Monto Total</p>
-              <p className="text-2xl font-bold">
+              <p className="text-sm text-gray-400 font-medium">Monto Total</p>
+              <p className="text-2xl font-bold text-white">
                 S/ {prestamoSeleccionado?.monto?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00'}
               </p>
             </div>
-            <div className="p-3 bg-white bg-opacity-20 rounded-full">
-              <FaMoneyBillAlt className="w-6 h-6" />
+            <div className="p-3 bg-indigo-500/20 rounded-full backdrop-blur-sm">
+              <FaMoneyBillAlt className="w-6 h-6 text-indigo-400" />
             </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-xs text-gray-400">Préstamo inicial</p>
           </div>
         </div>
 
         {/* Tarjeta de pagos realizados */}
-        <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm opacity-80">Pagado</p>
-              <p className="text-2xl font-bold">
-                S/ {((prestamoSeleccionado?.monto || 0) - (montoRestante || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              <p className="text-sm text-gray-400 font-medium">Pagado</p>
+              <p className="text-2xl font-bold text-green-400">
+                S/ {pagos && pagos.length > 0 ? 
+                  pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : 
+                  '0.00'}
               </p>
             </div>
-            <div className="p-3 bg-white bg-opacity-20 rounded-full">
-              <FaCheckCircle className="w-6 h-6" />
+            <div className="p-3 bg-green-500/20 rounded-full backdrop-blur-sm">
+              <FaCheckCircle className="w-6 h-6 text-green-400" />
             </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-xs text-gray-400">Total abonado</p>
           </div>
         </div>
 
         {/* Tarjeta de pendiente */}
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white p-6 rounded-xl shadow-lg">
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm opacity-80">Por Pagar</p>
-              <p className="text-2xl font-bold">
-                S/ {(montoRestante || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              <p className="text-sm text-gray-400 font-medium">Por Pagar</p>
+              <p className="text-2xl font-bold text-amber-400">
+                S/ {montoRestante !== null ? 
+                  Math.max(0, montoRestante).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : 
+                  (prestamoSeleccionado?.monto?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00')}
               </p>
             </div>
-            <div className="p-3 bg-white bg-opacity-20 rounded-full">
-              <FaClock className="w-6 h-6" />
+            <div className="p-3 bg-amber-500/20 rounded-full backdrop-blur-sm">
+              <FaClock className="w-6 h-6 text-amber-400" />
             </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-xs text-gray-400">Saldo pendiente</p>
           </div>
         </div>
       </div>
 
       {/* Línea de tiempo de pagos */}
-      <div className="bg-white p-6 rounded-xl shadow-md mb-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Historial de Pagos</h2>
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl border border-gray-700 shadow-lg mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Historial de Pagos</h2>
+            <p className="text-sm text-gray-400 mt-1">Seguimiento de los pagos realizados</p>
+          </div>
           <button
             onClick={() => setIsModalOpen(true)}
             disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+            className={`inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
               cargando || (prestamoSeleccionado?.estado === 'PAGADO') ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
@@ -410,15 +478,19 @@ const cargarPagos = async () => {
             montoRestante={montoRestante || 0} 
           />
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <FaMoneyBillWave className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay pagos registrados</h3>
-            <p className="mt-1 text-sm text-gray-500">Comienza registrando un nuevo pago.</p>
+          <div className="text-center py-12 bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-700">
+            <FaMoneyBillWave className="mx-auto h-12 w-12 text-gray-500" />
+            <h3 className="mt-2 text-sm font-medium text-gray-200">No hay pagos registrados</h3>
+            <p className="mt-1 text-sm text-gray-400">Comienza registrando un nuevo pago.</p>
             <div className="mt-6">
               <button
-                type="button"
                 onClick={() => setIsModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
+                  cargando || (prestamoSeleccionado?.estado === 'PAGADO')
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
+                }`}
               >
                 <FaMoneyBillWave className="-ml-1 mr-2 h-5 w-5" />
                 Registrar Primer Pago
@@ -430,78 +502,133 @@ const cargarPagos = async () => {
 
       {/* Mensaje de error */}
       {error && (
-        <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700">
-          <p>{error}</p>
+        <div className="mb-6 p-4 bg-red-900/30 border-l-4 border-red-500 text-red-200 rounded-r-lg">
+          <p className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            {error}
+          </p>
         </div>
       )}
 
       {/* Resumen del Préstamo */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-xl shadow-lg mb-6">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl border border-gray-700 shadow-lg mb-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Resumen del Préstamo</h2>
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div>
-                <p className="text-blue-100 text-sm">Monto del préstamo</p>
-                <p className="text-xl font-semibold">
+          <div className="w-full">
+            <h2 className="text-2xl font-bold text-white mb-6">Resumen del Préstamo</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5 hover:bg-gray-800/70 transition-colors duration-200">
+                <h3 className="text-gray-400 text-xs font-medium mb-1">Monto Total</h3>
+                <p className="text-xl font-bold text-white">
                   S/ {prestamoSeleccionado?.monto?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00'}
                 </p>
+                <div className="mt-2 text-xs text-gray-400">
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span>
+                    Préstamo inicial
+                  </span>
+                </div>
               </div>
-              <div>
-                <p className="text-blue-100 text-sm">Monto restante</p>
-                <p className="text-xl font-semibold">
+              
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5 hover:bg-gray-800/70 transition-colors duration-200">
+                <h3 className="text-gray-400 text-xs font-medium mb-1">Por Pagar</h3>
+                <p className="text-xl font-bold text-amber-400">
                   S/ {montoRestante?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00'}
                 </p>
+                <div className="mt-2 text-xs text-gray-400">
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 mr-2"></span>
+                    Saldo pendiente
+                  </span>
+                </div>
               </div>
-              <div>
-                <p className="text-blue-100 text-sm">Total pagado</p>
-                <p className="text-xl font-semibold">
-                  S/ {prestamoSeleccionado?.monto - (montoRestante || 0) > 0 ? 
-                      (prestamoSeleccionado.monto - montoRestante).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '0.00'}
+              
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5 hover:bg-gray-800/70 transition-colors duration-200">
+                <h3 className="text-gray-400 text-xs font-medium mb-1">Total pagado</h3>
+                <p className="text-xl font-bold text-green-400">
+                  S/ {pagos && pagos.length > 0 ? 
+                      pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '0.00'}
                 </p>
+                <div className="mt-2 text-xs text-gray-400">
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                    Total abonado
+                  </span>
+                </div>
               </div>
-              <div>
-                <p className="text-blue-100 text-sm">Estado</p>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  prestamoSeleccionado?.estado === 'PENDIENTE' ? 'bg-yellow-100 text-yellow-800' :
-                  prestamoSeleccionado?.estado === 'PAGADO' || prestamoSeleccionado?.estado === 'APROBADO' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {prestamoSeleccionado?.estado || 'SIN ESTADO'}
-                </span>
+              
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5 hover:bg-gray-800/70 transition-colors duration-200">
+                <div className="flex justify-between items-start h-full">
+                  <div>
+                    <h3 className="text-gray-400 text-xs font-medium mb-2">Estado</h3>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      prestamoSeleccionado?.estado === 'PENDIENTE' ? 'bg-yellow-500/20 text-yellow-400' :
+                      prestamoSeleccionado?.estado === 'PAGADO' ? 'bg-green-500/20 text-green-400' :
+                      prestamoSeleccionado?.estado === 'APROBADO' ? 'bg-blue-500/20 text-blue-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {prestamoSeleccionado?.estado || 'SIN ESTADO'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
+                    className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
+                      cargando || prestamoSeleccionado?.estado === 'PAGADO' 
+                        ? 'bg-gray-600 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
+                    }`}
+                  >
+                    <svg className="w-4 h-4 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    {prestamoSeleccionado?.estado === 'PAGADO' ? 'Pagado' : 'Pagar'}
+                  </button>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>Progreso</span>
+                    <span>
+                      {prestamoSeleccionado?.monto 
+                        ? `${((1 - (montoRestante || 0) / prestamoSeleccionado.monto) * 100).toFixed(1)}%` 
+                        : '0%'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-700 rounded-full h-1.5 mt-1">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-indigo-600 h-1.5 rounded-full" 
+                      style={{
+                        width: prestamoSeleccionado?.monto 
+                          ? `${Math.min(100, ((1 - (montoRestante || 0) / prestamoSeleccionado.monto) * 100))}%` 
+                          : '0%'
+                      }}
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
-            className={`mt-4 md:mt-0 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white ${
-              cargando || prestamoSeleccionado?.estado === 'PAGADO' 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
-            }`}
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            {prestamoSeleccionado?.estado === 'PAGADO' ? 'Préstamo Pagado' : 'Registrar Pago'}
-          </button>
         </div>
       </div>
 
       {/* Lista de Pagos */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-800">Historial de Pagos</h2>
-          <div className="flex space-x-2">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl border border-gray-700 shadow-lg">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Registro de Pagos</h2>
+            <p className="text-sm text-gray-400 mt-1">Lista detallada de todos los pagos realizados</p>
+          </div>
+          <div className="flex space-x-2 w-full sm:w-auto">
             <BotonActualizarLista 
               onRefresh={cargarPagos} 
               disabled={cargando} 
+              className="bg-gray-700 hover:bg-gray-600 text-white"
             />
             <button
               onClick={calcularMontoRestantePrestamo}
               disabled={cargando}
-              className={`p-2 text-gray-600 hover:bg-gray-100 rounded-full ${
+              className={`p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg border border-gray-600 transition-colors duration-200 ${
                 cargando ? 'opacity-50 cursor-not-allowed' : ''
               }`}
               title="Actualizar monto restante"
@@ -516,37 +643,64 @@ const cargarPagos = async () => {
         {cargando && pagos.length === 0 ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Cargando pagos...</p>
+            <p className="mt-2 text-gray-400">Cargando pagos...</p>
           </div>
         ) : pagos.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="overflow-x-auto rounded-lg border border-gray-700">
+            <table className="min-w-full divide-y divide-gray-700">
+              <thead className="bg-gray-800">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Monto</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Fecha</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-900/50 divide-y divide-gray-800">
                 {pagos.map((pago) => (
-                  <tr key={pago.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{pago.id}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      S/ {pago.montoPago?.toFixed(2) || '0.00'}
+                  <tr key={pago.id} className="hover:bg-gray-800/50 transition-colors duration-150">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="text-sm font-medium text-gray-300 bg-gray-800 px-2.5 py-1 rounded-full">
+                        #{pago.id}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(pago.fecha).toLocaleDateString('es-ES')}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span className="text-green-400 font-medium">
+                          S/ {parseFloat(pago.montoPago || 0).toFixed(2)}
+                        </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleVerDetalle(pago)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        title="Ver detalles"
-                      >
-                        <FaEye className="inline-block" />
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-400">
+                        {new Date(pago.fecha).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => handleVerDetalle(pago)}
+                          className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200 p-1.5 rounded-full hover:bg-indigo-900/30"
+                          title="Ver detalles"
+                        >
+                          <FaEye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {}}
+                          className="text-blue-400 hover:text-blue-300 transition-colors duration-200 p-1.5 rounded-full hover:bg-blue-900/30"
+                          title="Descargar recibo"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -554,24 +708,24 @@ const cargarPagos = async () => {
             </table>
           </div>
         ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="text-center py-12 bg-gray-800/30 rounded-lg border-2 border-dashed border-gray-700">
+            <svg className="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No hay pagos registrados</h3>
-            <p className="mt-1 text-sm text-gray-500">Comienza registrando un nuevo pago.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-200">No hay pagos registrados</h3>
+            <p className="mt-1 text-sm text-gray-400">Comienza registrando un nuevo pago.</p>
             <div className="mt-6">
               <button
                 onClick={() => setIsModalOpen(true)}
                 disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                  cargando || prestamoSeleccionado?.estado === 'PAGADO' 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500'
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
+                  cargando || (prestamoSeleccionado?.estado === 'PAGADO')
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
                 }`}
               >
                 <FaMoneyBillWave className="-ml-1 mr-2 h-5 w-5" />
-                Registrar Pago
+                Registrar Primer Pago
               </button>
             </div>
           </div>
@@ -583,7 +737,7 @@ const cargarPagos = async () => {
         <div className="fixed bottom-6 right-6 md:hidden">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="p-4 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            className="p-4 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             aria-label="Registrar pago"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
