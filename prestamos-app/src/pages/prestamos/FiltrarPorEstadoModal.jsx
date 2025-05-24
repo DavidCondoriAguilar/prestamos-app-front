@@ -1,6 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { obtenerPrestamosPorEstado, obtenerPrestamosPorCliente } from "../../api/prestamoApi";
-import { FaFilter, FaTimes } from "react-icons/fa"; // Iconos
+import { FaFilter, FaTimes, FaUserAlt, FaSearch, FaInfoCircle } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+
+// Animation variants
+const modalVariants = {
+  hidden: { opacity: 0, y: -20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { 
+      type: "spring",
+      damping: 25,
+      stiffness: 300
+    }
+  },
+  exit: { opacity: 0, y: 20 }
+};
+
+const backdropVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { duration: 0.2 }
+  },
+  exit: { 
+    opacity: 0,
+    transition: { duration: 0.15 }
+  }
+};
 
 const FiltrarPorEstadoModal = ({ isOpen, onClose, onFiltrado }) => {
   const [estado, setEstado] = useState(""); // Estado seleccionado
@@ -53,72 +81,164 @@ const FiltrarPorEstadoModal = ({ isOpen, onClose, onFiltrado }) => {
     }
   };
 
-  // No renderizar si el modal está cerrado
-  if (!isOpen) return null;
+  // Close on Escape key press
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  // Close on backdrop click
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        {/* Título */}
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Filtrar Préstamos</h2>
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={onClose}
-            title="Cerrar"
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+          variants={backdropVariants}
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          onClick={handleBackdropClick}
+        >
+          <motion.div
+            variants={modalVariants}
+            className="w-full max-w-md bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700/50"
           >
-            <FaTimes size={20} />
-          </button>
-        </div>
+            {/* Header */}
+            <div className="p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-800 to-gray-900/80">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-400 mr-3">
+                    <FaFilter className="text-lg" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+                      Filtrar Préstamos
+                    </h2>
+                    <p className="text-sm text-gray-400">Aplica filtros para encontrar préstamos específicos</p>
+                  </div>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-white p-1.5 rounded-full hover:bg-gray-700/50 transition-colors"
+                  title="Cerrar"
+                  aria-label="Cerrar modal"
+                >
+                  <FaTimes className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
 
-        {/* Campo para filtrar por estado */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Estado del Préstamo
-          </label>
-          <input
-            type="text"
-            value={estado}
-            onChange={(e) => setEstado(e.target.value)}
-            placeholder="Ejemplo: PENDIENTE, APROBADO, PAGADO"
-            className="border rounded p-2 w-full text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Estado del Préstamo */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <FaInfoCircle className="text-indigo-400" />
+                    Estado del Préstamo
+                  </label>
+                  <span className="text-xs text-gray-500">Opcional</span>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaSearch className="h-4 w-4 text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
+                    value={estado}
+                    onChange={(e) => setEstado(e.target.value)}
+                    placeholder="Ej: PENDIENTE, APROBADO, PAGADO"
+                    className="block w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Deja vacío para no filtrar por estado
+                </p>
+              </div>
 
-        {/* Campo para filtrar por ID de cliente */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            ID del Cliente
-          </label>
-          <input
-            type="number"
-            value={clienteId}
-            onChange={(e) => setClienteId(e.target.value)}
-            placeholder="Ejemplo: 123"
-            className="border rounded p-2 w-full text-black focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+              {/* ID del Cliente */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                    <FaUserAlt className="text-indigo-400" />
+                    ID del Cliente
+                  </label>
+                  <span className="text-xs text-gray-500">Opcional</span>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FaUserAlt className="h-4 w-4 text-gray-500" />
+                  </div>
+                  <input
+                    type="number"
+                    value={clienteId}
+                    onChange={(e) => setClienteId(e.target.value)}
+                    placeholder="Ej: 123"
+                    className="block w-full pl-10 pr-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+                <p className="text-xs text-gray-500">
+                  Ingresa el ID numérico del cliente
+                </p>
+              </div>
 
-        {/* Mensaje de error */}
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+              {/* Error Message */}
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 bg-red-900/30 border border-red-800/50 rounded-lg text-red-300 text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </div>
 
-        {/* Botones de acción */}
-        <div className="flex justify-between">
-          <button
-            className="bg-indigo-500 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-indigo-600 transition-colors"
-            onClick={handleFiltrar}
-          >
-            <FaFilter size={16} /> Filtrar
-          </button>
-          <button
-            className="bg-gray-500 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-gray-600 transition-colors"
-            onClick={onClose}
-          >
-            <FaTimes size={16} /> Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+            {/* Footer */}
+            <div className="p-6 pt-0">
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2.5 text-sm font-medium text-gray-300 hover:text-white bg-gray-700/50 hover:bg-gray-700 rounded-lg border border-gray-600/50 transition-colors flex items-center gap-2"
+                >
+                  <FaTimes className="w-4 h-4" />
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleFiltrar}
+                  disabled={!estado.trim() && !clienteId.trim()}
+                  className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex items-center gap-2 ${
+                    estado.trim() || clienteId.trim()
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg shadow-indigo-500/20'
+                      : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <FaFilter className="w-4 h-4" />
+                  Aplicar Filtros
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
