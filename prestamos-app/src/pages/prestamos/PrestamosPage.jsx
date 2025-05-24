@@ -191,7 +191,7 @@ const PrestamosPage = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-4 py-2.5 bg-gray-800/30 backdrop-blur-sm border-2 border-gray-700/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/70 transition-all duration-200"
-                placeholder="Buscar préstamos por nombre, ID, monto o estado..."
+                placeholder="Buscar préstamos por ID, monto o estado..."
               />
               {searchTerm && (
                 <button
