@@ -23,12 +23,14 @@ import {
   FiDollarSign as FiDollar,
   FiCreditCard,
   FiPercent,
-  FiCalendar
+  FiCalendar,
+  FiX
 } from "react-icons/fi";
 import { actualizarEstadoPrestamo, obtenerTodosLosPrestamos } from "../../api/prestamoApi";
 
 const PrestamosPage = () => {
   const [prestamos, setPrestamos] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState({
     crear: false,
     actualizar: false,
@@ -66,13 +68,26 @@ const PrestamosPage = () => {
     }
   };
 
+  // Filtrar préstamos basado en el término de búsqueda
+  const filteredPrestamos = prestamos.filter(prestamo => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      (prestamo.cliente?.nombres?.toLowerCase().includes(searchLower)) ||
+      (prestamo.cliente?.apellidos?.toLowerCase().includes(searchLower)) ||
+      (prestamo.id?.toString().includes(searchTerm)) ||
+      (prestamo.monto?.toString().includes(searchTerm)) ||
+      (prestamo.estado?.toLowerCase().includes(searchLower))
+    );
+  });
+
   // Calcular estadísticas
   const estadisticas = {
-    total: prestamos.length,
-    pagados: prestamos.filter(p => p.estado === 'PAGADO').length,
-    pendientes: prestamos.filter(p => p.estado === 'PENDIENTE').length,
-    vencidos: prestamos.filter(p => p.estado === 'VENCIDO').length,
-    montoTotal: prestamos.reduce((sum, p) => sum + (p.monto || 0), 0)
+    total: filteredPrestamos.length,
+    pagados: filteredPrestamos.filter(p => p.estado === 'PAGADO').length,
+    pendientes: filteredPrestamos.filter(p => p.estado === 'PENDIENTE').length,
+    vencidos: filteredPrestamos.filter(p => p.estado === 'VENCIDO').length,
+    montoTotal: filteredPrestamos.reduce((sum, p) => sum + (p.monto || 0), 0)
   };
 
   return (
@@ -165,17 +180,28 @@ const PrestamosPage = () => {
         </div>
 
         {/* Filtros y Búsqueda */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-xl p-5 mb-8 border border-gray-700/50">
+        <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/60 backdrop-blur-lg rounded-2xl shadow-2xl p-6 mb-8 border border-gray-700/30 transition-all duration-300 hover:border-gray-600/50">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiSearch className="h-5 w-5 text-gray-500" />
+                <FiSearch className="h-5 w-5 text-blue-400/80" />
               </div>
               <input
                 type="text"
-                className="block w-full pl-10 pr-4 py-2.5 bg-gray-700/50 border border-gray-600 rounded-xl text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                placeholder="Buscar préstamos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-4 py-2.5 bg-gray-800/30 backdrop-blur-sm border-2 border-gray-700/30 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/70 transition-all duration-200"
+                placeholder="Buscar préstamos por nombre, ID, monto o estado..."
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white transition-colors"
+                  title="Limpiar búsqueda"
+                >
+                  <FiX className="h-4 w-4" />
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <button
@@ -206,7 +232,7 @@ const PrestamosPage = () => {
         <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
           <div className="overflow-x-auto">
             <PrestamosList
-              prestamos={prestamos}
+              prestamos={filteredPrestamos}
               onEliminar={fetchPrestamos}
               onActualizarEstado={actualizarEstado}
             />
