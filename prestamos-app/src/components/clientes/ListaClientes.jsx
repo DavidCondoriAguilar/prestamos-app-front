@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import formatCurrency from "../../utils/formatCurrency";
-import { FiUser, FiMail, FiDollarSign, FiEye, FiCreditCard, FiTrash2 } from "react-icons/fi";
+import { FiUser, FiMail, FiDollarSign, FiEye, FiCreditCard, FiTrash2, FiFileText } from "react-icons/fi";
 import ConfirmationDelete from "./ConfirmationDelete";
+import { PdfButton } from "../PdfButton";
 
 const ListaClientes = ({ clientes, onVerDetalles, onEliminar, formatDate }) => {
   const [clienteAEliminar, setClienteAEliminar] = useState(null);
@@ -113,6 +114,19 @@ const ListaClientes = ({ clientes, onVerDetalles, onEliminar, formatDate }) => {
                   <FiEye className="mr-1.5 group-hover:text-blue-400" />
                   <span className="hidden sm:inline">Ver</span>
                 </motion.button>
+                <div onClick={e => e.stopPropagation()}>
+                  <PdfButton 
+                    clientId={cliente.id}
+                    clientName={cliente.nombre}
+                    variant="ghost"
+                    size="sm"
+                    className="!px-3 !py-1.5 !text-sm hover:!text-blue-400 !border-gray-600 !bg-gray-800/50 hover:!bg-blue-600/20 hover:!border-blue-500/50"
+                    iconOnly={false}
+                  >
+                    <FiFileText className="group-hover:text-blue-400" />
+                    <span className="hidden sm:inline ml-1.5">PDF</span>
+                  </PdfButton>
+                </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
