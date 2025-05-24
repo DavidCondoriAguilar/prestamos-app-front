@@ -13,9 +13,10 @@ import "react-toastify/dist/ReactToastify.css";
 function App() {
   return (
     <BrowserRouter>
-      <div className="bg-gray-900 text-white min-h-screen flex flex-col">
+      <div className="bg-gray-900 text-white min-h-screen flex">
         <NavBar />
-        <main className="flex-grow ">
+        <div className="flex-1 flex flex-col min-h-screen ml-0 transition-all duration-300 lg:ml-64">
+        <main className="flex-grow p-6">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/clientes" element={<ClienteList />} />
@@ -31,7 +32,7 @@ function App() {
           </Routes>
         </main>
         <Footer />
-
+        </div>
         <ToastContainer
           position="top-right"
           autoClose={3000}
