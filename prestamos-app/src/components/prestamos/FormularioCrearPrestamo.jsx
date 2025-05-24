@@ -3,6 +3,66 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaPlus, FaUser, FaMoneyBillWave, FaPercentage, FaCalendarAlt, FaCheck } from "react-icons/fa";
 import { toast } from "react-toastify";
 
+const FormField = React.memo(({ id, label, type = "text", placeholder, icon: Icon, options, error, value, onChange, ...props }) => (
+  <motion.div 
+    className="mb-5"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3 }}
+  >
+    <label 
+      htmlFor={id} 
+      className="block text-sm font-medium text-gray-300 mb-1.5 flex items-center"
+    >
+      {Icon && <Icon className="mr-2 text-blue-400" />}
+      {label}
+    </label>
+    
+    <div className="relative">
+      {type === 'select' ? (
+        <select
+          id={id}
+          value={value}
+          onChange={onChange}
+          className={`w-full px-4 pl-10 py-2.5 bg-gray-800/30 backdrop-blur-sm border-2 ${
+            error ? 'border-red-500/80' : 'border-gray-700/30 hover:border-blue-500/50 focus:border-blue-500/70'
+          } rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all duration-200`}
+          {...props}
+        >
+          {options.map(option => (
+            <option key={option.value} value={option.value} className="bg-gray-800 text-white">
+              {option.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={`w-full px-4 pl-10 py-2.5 bg-gray-800/30 backdrop-blur-sm border-2 ${
+            error ? 'border-red-500/80' : 'border-gray-700/30 hover:border-blue-500/50 focus:border-blue-500/70'
+          } rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-transparent transition-all duration-200`}
+          style={{ caretColor: '#3b82f6' }}
+          {...props}
+        />
+      )}
+      
+      {error && (
+        <motion.p 
+          className="mt-1 text-sm text-red-400"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {error}
+        </motion.p>
+      )}
+    </div>
+  </motion.div>
+));
+
 const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
   const [formData, setFormData] = useState({
     monto: "",
@@ -88,77 +148,28 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
     }
   };
 
-  // Form field component
-  const FormField = ({ id, label, type = "text", placeholder, icon: Icon, options, ...props }) => (
-    <motion.div 
-      className="mb-5"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
-      <label 
-        htmlFor={id} 
-        className="block text-sm font-medium text-gray-300 mb-1.5 flex items-center"
-      >
-        {Icon && <Icon className="mr-2 text-blue-400" />}
-        {label}
-      </label>
-      
-      <div className="relative">
-        {type === 'select' ? (
-          <select
-            id={id}
-            value={formData[id]}
-            onChange={handleChange}
-            className={`w-full px-4 pl-10 py-2.5 bg-gray-800/50 border ${
-              errors[id] ? 'border-red-500' : 'border-gray-700/50 hover:border-blue-500/50'
-            } rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-200`}
-            {...props}
-          >
-            {options.map(option => (
-              <option key={option.value} value={option.value} className="bg-gray-800 text-white">
-                {option.label}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <input
-            id={id}
-            type={type}
-            value={formData[id]}
-            onChange={handleChange}
-            placeholder={placeholder}
-            className={`w-full px-4 pl-10 py-2.5 bg-gray-800/50 border ${
-              errors[id] ? 'border-red-500' : 'border-gray-700/50 hover:border-blue-500/50'
-            } rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent transition-all duration-200`}
-            {...props}
-          />
-        )}
-        
-        {errors[id] && (
-          <motion.p 
-            className="mt-1 text-sm text-red-400"
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {errors[id]}
-          </motion.p>
-        )}
-      </div>
-    </motion.div>
-  );
+
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-1">
+    <form onSubmit={handleSubmit} className="space-y-1 p-1">
+      <motion.div 
+        className="p-6 rounded-2xl bg-gradient-to-br from-gray-900/60 to-gray-800/50 backdrop-blur-lg border border-gray-700/30 shadow-2xl"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
       <FormField
         id="monto"
         label="Monto del Préstamo"
         type="number"
+        value={formData.monto}
+        onChange={handleChange}
         placeholder="Ej: 1000"
         icon={FaMoneyBillWave}
         min="0"
         step="0.01"
         required
+        error={errors.monto}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -166,22 +177,28 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
           id="interes"
           label="Tasa de Interés (%)"
           type="number"
+          value={formData.interes}
+          onChange={handleChange}
           placeholder="Ej: 12"
           icon={FaPercentage}
           min="0"
           step="0.01"
           required
+          error={errors.interes}
         />
 
         <FormField
           id="interesMoratorio"
           label="Interés Moratorio (%)"
           type="number"
+          value={formData.interesMoratorio}
+          onChange={handleChange}
           placeholder="Ej: 5"
           icon={FaPercentage}
           min="0"
           step="0.01"
           required
+          error={errors.interesMoratorio}
         />
       </div>
 
@@ -189,8 +206,11 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
         id="fechaVencimiento"
         label="Fecha de Vencimiento"
         type="date"
+        value={formData.fechaVencimiento}
+        onChange={handleChange}
         icon={FaCalendarAlt}
         required
+        error={errors.fechaVencimiento}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -198,6 +218,8 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
           id="estado"
           label="Estado del Préstamo"
           type="select"
+          value={formData.estado}
+          onChange={handleChange}
           icon={FaCheck}
           options={[
             { value: 'PENDIENTE', label: 'Pendiente' },
@@ -206,21 +228,27 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
             { value: 'VENCIDO', label: 'Vencido' },
           ]}
           required
+          error={errors.estado}
         />
 
         <FormField
           id="clienteId"
           label="ID del Cliente"
           type="number"
+          value={formData.clienteId}
+          onChange={handleChange}
           placeholder="Ej: 123"
           icon={FaUser}
           min="1"
           required
+          error={errors.clienteId}
         />
       </div>
 
+      </motion.div>
+      
       <motion.div 
-        className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-700/50"
+        className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-700/30"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -230,7 +258,7 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
           onClick={onClose}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="px-5 py-2.5 text-sm font-medium rounded-xl bg-gray-700/50 text-gray-300 hover:bg-gray-600/50 transition-colors flex items-center gap-2"
+          className="px-5 py-2.5 text-sm font-medium rounded-xl bg-gray-800/30 backdrop-blur-sm text-gray-200 hover:bg-gray-700/40 border border-gray-700/50 hover:border-gray-600/50 transition-all flex items-center gap-2 shadow-sm"
         >
           <FaTimes />
           Cancelar
@@ -243,8 +271,8 @@ const FormularioCrearPrestamo = ({ onSubmit, onClose }) => {
           whileTap={{ scale: 0.98 }}
           className={`px-6 py-2.5 text-sm font-medium rounded-xl text-white transition-all flex items-center gap-2 ${
             isSubmitting 
-              ? 'bg-blue-600/50 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20'
+              ? 'bg-blue-600/30 backdrop-blur-sm cursor-not-allowed' 
+              : 'bg-gradient-to-r from-blue-500/90 to-blue-600/90 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20 border border-blue-400/20 hover:border-blue-300/30 backdrop-blur-sm'
           }`}
         >
           {isSubmitting ? (
