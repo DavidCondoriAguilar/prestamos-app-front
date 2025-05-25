@@ -4,3 +4,4 @@
 ![pagos](https://github.com/user-attachments/assets/34e36deb-14b4-4eee-a3be-6864e2b7e3d3)
 ![loanRecent](https://github.com/user-attachments/assets/22fb5720-5382-4846-9f2c-503f6db87328)
 ![simulator](https://github.com/user-attachments/assets/5a5f3691-c7fe-4d25-878e-050b7422e6c2)
+![estaditica](https://github.com/user-attachments/assets/d5a9a84a-d389-4d25-b9bb-a22a6b188f29)
