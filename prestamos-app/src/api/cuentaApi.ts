@@ -1,25 +1,12 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
+import { ApiResponse, Cuenta } from "../types/CuentaType";
+
 
 // URL base del backend para cuentas
 const API_URL = "http://localhost:8080/cuentas";
 
 // Interfaces para tipado fuerte
-export interface Cuenta {
-    id?: number;
-    clienteId: number;
-    numeroCuenta: string;
-    saldo: number;
-    fechaCreacion?: string;
-    tipoCuenta: string;
-    estado?: boolean;
-    // Agrega más campos según sea necesario
-}
 
-interface ApiResponse<T> {
-    data: T;
-    message?: string;
-    status: number;
-}
 
 /**
  * Crea una nueva cuenta.

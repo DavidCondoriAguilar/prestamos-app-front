@@ -1,9 +1,8 @@
 import axios from "axios";
 import { CrearPrestamo, Prestamo } from "../types/prestamoType";
+import API_URLS from "../config/apiConfig";
 
-const API_URL = "http://localhost:8080/prestamos";
-
-
+const API_URL = API_URLS.PRESTAMOS;
 
 /**
  * Función genérica para manejar solicitudes HTTP
@@ -18,18 +17,30 @@ const fetchData = async <T>(
   data: any = null
 ): Promise<{ data: T | null; error: string | null }> => {
   try {
+    // Obtener el token del localStorage
+    const token = localStorage.getItem('token');
+    
     const response = await axios({
       url,
       method,
       data,
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json'
+      }
     });
-
-    console.log("Respuesta del backend:", response.data);
 
     return { data: response.data as T, error: null };
   } catch (error: any) {
     console.error(`Error en solicitud ${method} a ${url}:`, error.message);
-    return { data: null, error: "Ocurrió un error en la solicitud. Inténtalo de nuevo más tarde." };
+    if (error.response?.status === 401) {
+      // Si el token es inválido o ha expirado, redirigir al login
+      window.location.href = '/login';
+    }
+    return { 
+      data: null, 
+      error: error.response?.data?.message || "Ocurrió un error en la solicitud. Inténtalo de nuevo más tarde." 
+    };
   }
 };
 

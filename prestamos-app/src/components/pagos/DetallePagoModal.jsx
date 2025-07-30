@@ -1,17 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTimes, FaPrint, FaFilePdf, FaCalendarAlt, FaMoneyBillWave, FaIdBadge, FaCheckCircle, FaFileInvoiceDollar } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 
 const DetallePagoModal = ({ isOpen, onClose, pago }) => {
   if (!isOpen || !pago) return null;
 
-  // Formatear la fecha para mostrarla en hora de Lima, Perú
+  // Formatear la fecha para mostrarla en hora de Lima, Perú (UTC-5)
   const formatearFecha = (fechaString) => {
     if (!fechaString) return 'No disponible';
     
     try {
       // Crear la fecha a partir del string ISO
-      let fecha = new Date(fechaString);
+      const fecha = new Date(fechaString);
       
       // Verificar si la fecha es válida
       if (isNaN(fecha.getTime())) {
@@ -19,27 +19,28 @@ const DetallePagoModal = ({ isOpen, onClose, pago }) => {
         return 'Fecha inválida';
       }
       
-      // Ajustar a la zona horaria de Lima (UTC-5)
-      // Primero obtenemos la hora local del usuario
-      const offsetLima = -5 * 60 * 60 * 1000; // Lima está en UTC-5
-      const offsetLocal = fecha.getTimezoneOffset() * 60 * 1000; // Offset local en milisegundos
+      // Obtener los componentes de la fecha en la zona horaria de Lima (UTC-5)
+      const opciones = {
+        timeZone: 'America/Lima',
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      };
       
-      // Ajustamos la fecha a la hora de Lima
-      fecha = new Date(fecha.getTime() + offsetLocal + offsetLima);
+      // Formatear la fecha según la zona horaria de Lima
+      const formateador = new Intl.DateTimeFormat('es-PE', opciones);
+      const partes = formateador.formatToParts(fecha);
       
-      // Obtener los componentes de la fecha
-      const dia = fecha.getDate().toString().padStart(2, '0');
-      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-      const anio = fecha.getFullYear().toString().slice(-2);
-      
-      // Obtener la hora en formato 12 horas
-      let horas = fecha.getHours();
-      const minutos = fecha.getMinutes().toString().padStart(2, '0');
-      const periodo = horas >= 12 ? 'p. m.' : 'a. m.';
-      
-      // Convertir a formato 12 horas
-      horas = horas % 12;
-      horas = horas ? horas : 12; // La hora 0 debe ser 12
+      // Extraer las partes de la fecha formateada
+      const dia = partes.find(p => p.type === 'day').value;
+      const mes = partes.find(p => p.type === 'month').value;
+      const anio = partes.find(p => p.type === 'year').value;
+      let horas = partes.find(p => p.type === 'hour').value;
+      const minutos = partes.find(p => p.type === 'minute').value;
+      const periodo = partes.find(p => p.type === 'dayPeriod').value;
       
       return `${dia}/${mes}/${anio}, ${horas}:${minutos} ${periodo}`;
       

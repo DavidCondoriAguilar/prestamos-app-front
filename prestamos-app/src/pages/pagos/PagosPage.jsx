@@ -146,14 +146,22 @@ const cargarPagos = async () => {
       }
       
       // Validar que el monto no exceda el saldo pendiente
-      if (montoPago > montoRestante) {
-        throw new Error(`El monto excede el saldo pendiente de S/ ${montoRestante.toFixed(2)}`);
+      const montoRestanteActual = await calcularMontoRestantePrestamo();
+      
+      if (montoRestanteActual === null) {
+        throw new Error("No se pudo calcular el monto restante del préstamo");
       }
       
-      // Crear el objeto de pago con el formato correcto
+      if (montoPago > montoRestanteActual) {
+        throw new Error(`El monto excede el saldo pendiente de S/ ${montoRestanteActual.toFixed(2)}`);
+      }
+      
+      // Usar el objeto de pago completo que viene del modal
+      // para preservar la marca de tiempo exacta
       const pagoData = {
         montoPago: montoPago,
-        fecha: pago.fecha || new Date().toISOString().split('T')[0]
+        fecha: pago.fecha, // Mantener la fecha ISO completa con hora
+        fechaHora: pago.fechaHora // Mantener el timestamp para ordenamiento
       };
       
       console.log("Intentando registrar pago con datos:", {

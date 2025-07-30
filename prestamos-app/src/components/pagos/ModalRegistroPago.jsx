@@ -126,7 +126,7 @@ const ModalRegistroPago = ({ isOpen, onClose, onPagoRegistrado, cargando, presta
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between px-1">
-                    <span className="text-xs text-gray-500">Mínimo: S/ 0.01</span>
+                    <span className="text-xs text-gray-500">Mínimo: S/ 20.00</span>
                     {monto && (
                       <span className="text-xs font-medium text-green-400">
                         Total: S/ {parseFloat(monto).toLocaleString('es-PE', { minimumFractionDigits: 2 })}

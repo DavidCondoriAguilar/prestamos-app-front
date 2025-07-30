@@ -25,11 +25,7 @@ const BuscadorClientes = ({ filtroNombre, setFiltroNombre }) => {
       <div 
         className={`relative flex items-center transition-all duration-200 ${isFocused ? 'ring-2 ring-blue-500' : ''} bg-gray-800/50 border ${isFocused ? 'border-blue-500/50' : 'border-gray-700/50'} rounded-xl overflow-hidden`}
       >
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <FiSearch className={`h-5 w-5 ${
-            isFocused ? 'text-blue-400' : 'text-gray-500'
-          } transition-colors duration-200`} />
-        </div>
+        
         
         <input
           type="text"

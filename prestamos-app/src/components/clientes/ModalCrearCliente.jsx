@@ -128,9 +128,6 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
                   NOMBRE COMPLETO
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                    <FiUser className="h-4 w-4 text-blue-400" />
-                  </div>
                   <input
                     type="text"
                     name="nombre"
@@ -138,7 +135,7 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
                     onChange={handleChange}
                     required
                     // placeholder="Ingrese el nombre completo"
-                    className="block w-full pl-11 pr-4 py-2.5 bg-gray-800/40 border border-gray-700/60 rounded-lg text-gray-100 placeholder-gray-500/70 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 text-[15px] leading-relaxed transition-all duration-200 "
+                    className="block mx-3 w-full pl-11 pr-4 py-2.5 bg-gray-800/40 border border-gray-700/60 rounded-lg text-gray-100 placeholder-gray-500/70 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500/40 text-[15px] leading-relaxed transition-all duration-200 "
                     disabled={loading}
                   />
                 </div>
@@ -150,9 +147,6 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
                   CORREO ELECTRÓNICO
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                    <FiMail className="h-4 w-4 text-blue-400" />
-                  </div>
                   <input
                     type="email"
                     name="correo"
@@ -172,9 +166,6 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
                   NÚMERO DE CUENTA
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                    <FiCreditCard className="h-4 w-4 text-blue-400" />
-                  </div>
                   <input
                     type="text"
                     name="cuenta.numeroCuenta"
@@ -194,9 +185,6 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
                   SALDO INICIAL
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
-                    <FiDollarSign className="h-4 w-4 text-blue-400" />
-                  </div>
                   <input
                     type="number"
                     name="cuenta.saldo"

@@ -1,7 +1,8 @@
-import axios from "axios";
 import { ActualizarCliente, Cliente, CrearCliente } from "../types/clienteType";
+import API_URLS from "../config/apiConfig";
+import { fetchWithAuth, createApiUrl } from "./apiInterceptor";
 
-const API_URL = "http://localhost:8080/clientes";
+const API_URL = createApiUrl(API_URLS.CLIENTES);
 
 /**
  * Función genérica para manejar solicitudes HTTP
@@ -16,12 +17,25 @@ const fetchData = async <T>(
   data: any = null
 ): Promise<{ data: T | null; error: string | null }> => {
   try {
-    const response = await axios({
-      url,
+    const options: RequestInit = {
       method,
-      data,
-    });
-    return { data: response.data as T, error: null };
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    if (data && (method === "POST" || method === "PUT")) {
+      options.body = JSON.stringify(data);
+    }
+
+    const response = await fetchWithAuth(url, options);
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    const responseData = await response.json();
+    return { data: responseData as T, error: null };
   } catch (error: any) {
     console.error(`Error en solicitud ${method} a ${url}:`, error.message);
     return { data: null, error: "Ocurrió un error en la solicitud. Inténtalo de nuevo más tarde." };
@@ -66,14 +80,23 @@ export const getClienteById = async (id: number): Promise<Cliente | null> => {
  * @returns Datos del cliente creado o null si ocurre un error.
  */
 export const createCliente = async (cliente: CrearCliente): Promise<Cliente | null> => {
-  console.log("Datos enviados al backend:", cliente);
-
-  const { data, error } = await fetchData<Cliente>(API_URL, "POST", cliente);
-  if (error) {
-    console.error(error);
+  if (!cliente) {
+    console.error("Datos del cliente inválidos.");
     return null;
   }
-  return data || null;
+
+  try {
+    const { data, error } = await fetchData<Cliente>(API_URL, "POST", cliente);
+    if (error) {
+      console.error(error);
+      return null;
+    }
+
+    return data || null;
+  } catch (error) {
+    console.error("Error al crear el cliente:", error);
+    return null;
+  }
 };
 
 /**

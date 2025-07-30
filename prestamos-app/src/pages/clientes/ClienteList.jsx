@@ -48,26 +48,25 @@ const ClienteList = () => {
   const handleCloseModal = () => {
     setClienteSeleccionado(null);
   };
-
   const handleCrearCliente = async (nuevoCliente) => {
-    if (!nuevoCliente.nombre || !nuevoCliente.correo) {
-      toast.error("Por favor, completa todos los campos requeridos.");
+    if (!nuevoCliente) {
+      console.error("Nuevo cliente es nulo o indefinido");
       return;
     }
-  
+
     try {
-      const clienteCreado = await createCliente(nuevoCliente);
-      toast.success("Cliente creado correctamente.");
-      
-      // Actualizamos el estado para que se refleje inmediatamente en la UI
-      setClientes((prevClientes) => [...prevClientes, clienteCreado]);
-      
-      setIsModalOpen(false);
+      const respuesta = await createCliente(nuevoCliente);
+      if (respuesta && respuesta.data) {
+        const clienteCreado = respuesta.data;
+        setClientes((prevClientes) => [...prevClientes, clienteCreado]);
+      } else {
+        console.error("Error al crear el cliente: respuesta inválida");
+      }
     } catch (error) {
-      console.error("Error al crear el cliente:", error);
-      toast.error(error.message || "Error al crear el cliente.");
+      console.error("Error al crear cliente:", error);
     }
   };
+
 
   // Función para eliminar un cliente
   const handleEliminarCliente = async (id) => {

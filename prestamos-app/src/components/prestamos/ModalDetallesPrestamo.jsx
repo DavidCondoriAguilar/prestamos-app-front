@@ -15,6 +15,27 @@ import {
 } from "react-icons/fa";
 import formatCurrency from "../../utils/formatCurrency";
 
+// Función para formatear fechas
+const formatDate = (dateString) => {
+  if (!dateString) return 'No especificada';
+  
+  const options = { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  };
+  
+  try {
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? 'Fecha inválida' : date.toLocaleDateString('es-ES', options);
+  } catch (error) {
+    console.error('Error al formatear fecha:', error);
+    return 'Fecha inválida';
+  }
+};
+
 const StatusBadge = ({ status }) => {
   const statusColors = {
     PENDIENTE: 'bg-yellow-500/20 text-yellow-400',
@@ -31,6 +52,16 @@ const StatusBadge = ({ status }) => {
 };
 
 const ModalDetallesPrestamo = ({ prestamo, onClose }) => {
+  // Debug: Ver datos de fechas en consola
+  React.useEffect(() => {
+    console.log('Datos del préstamo:', {
+      fechaCreacion: prestamo.fechaCreacion,
+      fechaVencimiento: prestamo.fechaVencimiento,
+      tipoFechaCreacion: typeof prestamo.fechaCreacion,
+      tipoFechaVencimiento: typeof prestamo.fechaVencimiento
+    });
+  }, [prestamo]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
@@ -110,11 +141,15 @@ const ModalDetallesPrestamo = ({ prestamo, onClose }) => {
                 <div className="space-y-2 pl-11">
                   <p className="text-sm">
                     <span className="text-gray-400">Creación:</span>{' '}
-                    <span className="text-white">{prestamo.fechaCreacion}</span>
+                    <span className="text-white">
+                      {formatDate(prestamo.fechaCreacion || prestamo.createdAt)}
+                    </span>
                   </p>
                   <p className="text-sm">
                     <span className="text-gray-400">Vencimiento:</span>{' '}
-                    <span className="text-white">{prestamo.fechaVencimiento}</span>
+                    <span className="text-white">
+                      {formatDate(prestamo.fechaVencimiento || prestamo.fechaVencimiento)}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -170,7 +205,7 @@ const ModalDetallesPrestamo = ({ prestamo, onClose }) => {
                             +{formatCurrency(pago.montoPago)}
                           </td>
                           <td className="px-6 py-4 text-right text-gray-400">
-                            {pago.fecha}
+                            {formatDate(pago.fecha)}
                           </td>
                         </tr>
                       ))}

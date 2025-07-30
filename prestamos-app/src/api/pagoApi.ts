@@ -1,7 +1,7 @@
-import axios from "axios";
+import axios from "./axiosConfig";
 
-// URL base del backend para pagos
-const API_URL = "http://localhost:8080/pagos";
+// Endpoint base para pagos
+const PAGOS_ENDPOINT = '/api/pagos';
 
 // Interfaces para tipar los datos
 export interface Pago {
@@ -49,7 +49,7 @@ const fetchData = async <T>(
  * @returns Lista de pagos o un array vacío si ocurre un error.
  */
 export const obtenerTodosLosPagos = async (): Promise<Pago[]> => {
-  const { data, error } = await fetchData<Pago[]>(API_URL);
+  const { data, error } = await fetchData<Pago[]>(PAGOS_ENDPOINT);
   if (error) {
     console.error(error);
     return [];
@@ -68,7 +68,7 @@ export const obtenerPagoPorId = async (id: number): Promise<Pago | null> => {
     return null;
   }
 
-  const { data, error } = await fetchData<Pago>(`${API_URL}/${id}`);
+  const { data, error } = await fetchData<Pago>(`${PAGOS_ENDPOINT}/${id}`);
   if (error) {
     console.error(error);
     return null;
@@ -101,43 +101,58 @@ export const registrarPago = async (prestamoId: number, pagoData: Omit<Pago, 'id
     throw new Error('El monto del pago debe ser mayor a cero');
   }
 
-  // Asegurar que la fecha tenga el formato correcto
-  const fechaPago = pagoData.fecha || new Date().toISOString().split('T')[0];
+  // Usar la fecha proporcionada o la fecha actual con hora
+  const fechaPago = pagoData.fecha || new Date().toISOString();
 
-  // Crear el objeto de pago que coincida exactamente con PagoModel del backend
+  // Crear el objeto de pago con la estructura que espera el backend
+  // Basado en el error 404, es posible que el backend espere el pago en el cuerpo sin el ID
   const pagoParaEnviar = {
-    // El ID no es necesario para crear un nuevo pago
-    montoPago: montoPago, // Usamos montoPago que es el nombre del campo en PagoModel
-    fecha: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
-    prestamoId: idPrestamo // El ID del préstamo al que pertenece el pago
+    monto: montoPago,
+    fechaPago: fechaPago
+    // No incluimos idPrestamo aquí ya que ya está en la URL
   };
 
   console.log('Enviando pago al servidor:', pagoParaEnviar);
 
   try {
-    // Según el ejemplo de Postman, la URL debe incluir el ID del préstamo
-    const url = `${API_URL}/${idPrestamo}`;
+    // Construir la URL correcta con el ID del préstamo
+    const url = `${PAGOS_ENDPOINT}/${idPrestamo}`;
     
     console.log('Enviando pago a:', url);
     console.log('Datos del pago:', pagoParaEnviar);
     
+    // Realizar la petición POST al endpoint correcto
     const response = await axios.post<Pago>(
       url,
       pagoParaEnviar,
       {
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        validateStatus: (status) => status < 500 // Aceptar códigos de estado menores a 500 como exitosos
       }
     );
     
-    if (!response.data) {
-      throw new Error('No se recibieron datos en la respuesta del servidor');
+    // Verificar si la respuesta es exitosa (código 2xx)
+    if (response.status >= 200 && response.status < 300) {
+      if (!response.data) {
+        console.warn('La respuesta del servidor no contiene datos');
+        throw new Error('No se recibieron datos en la respuesta del servidor');
+      }
+      
+      console.log('Pago registrado exitosamente:', response.data);
+      return response.data;
     }
     
-    console.log('Pago registrado exitosamente:', response.data);
-    return response.data;
+    // Manejar códigos de estado de error específicos
+    if (response.status === 400) {
+      throw new Error('Datos de pago inválidos. Verifica la información proporcionada.');
+    } else if (response.status === 401) {
+      throw new Error('No autorizado. Por favor, inicia sesión nuevamente.');
+    } else if (response.status === 403) {
+      throw new Error('No tienes permiso para realizar esta acción.');
+    } else if (response.status === 404) {
+      throw new Error('No se encontró el recurso solicitado. Verifica el ID del préstamo.');
+    } else {
+      throw new Error(`Error en el servidor: ${response.status} ${response.statusText}`);
+    }
   } catch (error: any) {
     console.error('Error completo al registrar pago:', error);
     
@@ -184,13 +199,16 @@ export const registrarPago = async (prestamoId: number, pagoData: Omit<Pago, 'id
  */
 export const eliminarPago = async (id: number): Promise<void> => {
   if (!id || id <= 0) {
-    console.error("ID de pago inválido.");
-    return;
+    throw new Error("ID de pago inválido");
   }
 
-  const { error } = await fetchData(`${API_URL}/${id}`, "DELETE");
+  const { error } = await fetchData<void>(
+    `${PAGOS_ENDPOINT}/${id}`,
+    "DELETE"
+  );
+
   if (error) {
-    console.error(error);
+    throw new Error(error);
   }
 };
 
@@ -205,11 +223,15 @@ export const obtenerPagosPorPrestamo = async (prestamoId: number): Promise<Pago[
     return [];
   }
 
-  const { data, error } = await fetchData<Pago[]>(`${API_URL}/prestamo/${prestamoId}`);
+  const { data, error } = await fetchData<Pago[]>(
+    `${PAGOS_ENDPOINT}/prestamo/${prestamoId}`
+  );
+
   if (error) {
     console.error(error);
     return [];
   }
+
   return data || [];
 };
 
@@ -224,12 +246,16 @@ export const calcularMontoRestante = async (prestamoId: number): Promise<number 
     return null;
   }
 
-  const { data, error } = await fetchData<number>(`${API_URL}/monto-restante/${prestamoId}`);
+  const { data, error } = await fetchData<{ montoRestante: number }>(
+    `${PAGOS_ENDPOINT}/monto-restante/${prestamoId}`
+  );
+
   if (error) {
     console.error(error);
     return null;
   }
-  return data || null;
+
+  return data?.montoRestante ?? null;
 };
 
 /**
@@ -242,15 +268,20 @@ export const obtenerTodosLosPagosPaginados = async (
   page: number = 0,
   size: number = 10
 ): Promise<PaginacionResponse<Pago>> => {
-  if (page < 0 || size <= 0) {
-    console.error("Parámetros de paginación inválidos.");
-    return { content: [], totalPages: 0, totalElements: 0, size: 0, number: 0 };
+  const { data, error } = await fetchData<PaginacionResponse<Pago>>(
+    `${PAGOS_ENDPOINT}/paginados?page=${page}&size=${size}`
+  );
+
+  if (error || !data) {
+    console.error(error || "No se pudieron obtener los pagos paginados");
+    return {
+      content: [],
+      totalPages: 0,
+      totalElements: 0,
+      size: 0,
+      number: 0,
+    };
   }
 
-  const { data, error } = await fetchData<PaginacionResponse<Pago>>(`${API_URL}?page=${page}&size=${size}`, "GET");
-  if (error) {
-    console.error(error);
-    return { content: [], totalPages: 0, totalElements: 0, size: 0, number: 0 };
-  }
-  return data || { content: [], totalPages: 0, totalElements: 0, size: 0, number: 0 };
+  return data;
 };
