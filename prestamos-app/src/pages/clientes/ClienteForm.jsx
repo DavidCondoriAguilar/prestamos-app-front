@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
-import { createCliente } from "../../api/clienteApi";
+import clienteApi from "../../api/clienteApi";
 
 const ClienteForm = ({ onClose, onCreado }) => {
   const [cliente, setCliente] = useState({
@@ -35,7 +35,7 @@ const ClienteForm = ({ onClose, onCreado }) => {
     e.preventDefault();
 
     // Validar campos
-    if (!cliente.nombre || !cliente.email || !cliente.cuenta.numeroCuenta) {
+    if (!cliente.nombre || !cliente.correo || !cliente.cuenta.numeroCuenta) {
       toast.error("Por favor, completa todos los campos correctamente", {
         position: "top-right",
         autoClose: 3000,
@@ -44,7 +44,7 @@ const ClienteForm = ({ onClose, onCreado }) => {
     }
 
     try {
-      await createCliente(cliente);
+      await clienteApi.create(cliente);
       toast.success("Cliente creado exitosamente", {
         position: "top-right",
         autoClose: 3000,
@@ -84,13 +84,13 @@ const ClienteForm = ({ onClose, onCreado }) => {
 
           {/* Campo de Correo */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="correo" className="block text-sm font-medium text-gray-700">
               Correo
             </label>
             <input
               type="email"
-              id="email"
-              name="email"
+              id="correo"
+              name="correo"
               value={cliente.correo}
               onChange={handleChange}
               placeholder="Correo electrónico"

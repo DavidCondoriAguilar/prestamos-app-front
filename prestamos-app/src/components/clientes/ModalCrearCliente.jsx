@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiUser, FiMail, FiCreditCard, FiDollarSign, FiX } from "react-icons/fi";
+import clienteApi from "../../api/clienteApi";
 
 const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
   const [formData, setFormData] = useState({
@@ -56,20 +57,8 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
 
       console.log("Enviando cliente:", JSON.stringify(clienteData, null, 2));
 
-      const response = await fetch("http://localhost:8080/clientes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(clienteData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error al crear cliente: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // Llamamos a onClienteCreado para actualizar la lista sin refrescar
-      onClienteCreado(data);
+      // Llamamos a onClienteCreado para que el store maneje la creación
+      await onClienteCreado(clienteData);
 
       // Reseteamos el formulario solo si la creación fue exitosa
       setFormData({ nombre: "", correo: "", cuenta: { numeroCuenta: "", saldo: "" } });
@@ -78,7 +67,11 @@ const ModalCrearCliente = ({ isOpen, onClose, onClienteCreado }) => {
       onClose();
     } catch (error) {
       console.error("Error al crear el cliente:", error);
-      setError("No se pudo crear el cliente. Intenta de nuevo.");
+      setError(
+        error.response?.data?.message || 
+        error.message || 
+        "No se pudo crear el cliente. Verifica los datos e inténtalo de nuevo."
+      );
     } finally {
       setLoading(false);
     }

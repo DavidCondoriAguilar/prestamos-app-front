@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from 'react';
-import NavBar from "./common/NavBar";
+import NavBar from "./layouts/NavBar";
 import PagosPage from "./pages/pagos/PagosPage";
-import Footer from "./common/Footer";
+import Footer from "./layouts/Footer";
 import ClienteForm from "./pages/clientes/ClienteForm";
 import ClienteDetail from "./pages/clientes/ClienteDetail";
 import ClienteList from "./pages/clientes/ClienteList";

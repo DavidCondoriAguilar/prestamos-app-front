@@ -1,8 +1,8 @@
-import axios from "axios";
+import axiosInstance from "./axiosConfig";
 import { CrearPrestamo, Prestamo } from "../types/prestamoType";
 import API_URLS from "../config/apiConfig";
 
-const API_URL = API_URLS.PRESTAMOS;
+const API_URL = "/prestamos"; // Use relative path since axiosInstance has baseURL
 
 /**
  * Función genérica para manejar solicitudes HTTP
@@ -20,7 +20,7 @@ const fetchData = async <T>(
     // Obtener el token del localStorage
     const token = localStorage.getItem('token');
     
-    const response = await axios({
+    const response = await axiosInstance({
       url,
       method,
       data,
@@ -81,7 +81,7 @@ export const obtenerPrestamoPorId = async (id: number): Promise<Prestamo | null>
  * @param prestamo - Datos del préstamo a crear.
  * @returns Datos del préstamo creado o null si ocurre un error.
  */
-export const crearPrestamo = async (prestamo: CrearPrestamo): Promise<Prestamo | null> => {
+export const crearPrestamo = async (prestamo: CrearPrestamo): Promise<{ data: Prestamo | null; error: string | null }> => {
   console.log("Datos enviados al backend:", prestamo);
 
   if (
@@ -91,16 +91,12 @@ export const crearPrestamo = async (prestamo: CrearPrestamo): Promise<Prestamo |
     !prestamo.fechaVencimiento ||
     !prestamo.estado
   ) {
-    console.error("Datos de préstamo incompletos.");
-    return null;
+    const errorMsg = "Datos de préstamo incompletos.";
+    console.error(errorMsg);
+    return { data: null, error: errorMsg };
   }
 
-  const { data, error } = await fetchData<Prestamo>(API_URL, "POST", prestamo);
-  if (error) {
-    console.error(error);
-    return null;
-  }
-  return data || null;
+  return await fetchData<Prestamo>(API_URL, "POST", prestamo);
 };
 
 /**

@@ -1,16 +1,15 @@
 import axios from 'axios';
 
-// Crear una instancia de axios con configuración base
+// Create axios instance with base URL
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
   },
-  withCredentials: true, // Importante para enviar cookies de autenticación
+  withCredentials: true,
 });
 
-// Interceptor para agregar el token de autenticación a las solicitudes
+// Request interceptor to add auth token to requests
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -24,13 +23,13 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Interceptor para manejar respuestas de error
+// Response interceptor to handle errors
 export const setupResponseInterceptor = (navigate) => {
   axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => {
       if (error.response?.status === 401) {
-        // Si el error es 401 (No autorizado), redirigir al login
+        // Handle unauthorized (token expired or invalid)
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         if (navigate) {

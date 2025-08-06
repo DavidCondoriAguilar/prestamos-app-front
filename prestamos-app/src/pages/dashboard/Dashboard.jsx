@@ -214,16 +214,46 @@ const Dashboard = () => {
   const cargarDatos = async () => {
     try {
       setCargando(true);
-      const data = await obtenerTodosLosPrestamos();
+      const response = await obtenerTodosLosPrestamos();
+      
+      // Ensure we're working with an array
+      const data = Array.isArray(response) ? response : [];
+      
       setPrestamos(data);
       
-      // Calcular estadísticas
-      const stats = calcularEstadisticas(data);
-      setEstadisticas(stats);
-      
-      // Generar datos para gráficos
-      const graficos = generarDatosGraficos(data);
-      setChartData(graficos);
+      // Only calculate stats if we have data
+      if (data.length > 0) {
+        const stats = calcularEstadisticas(data);
+        setEstadisticas(stats);
+        
+        const graficos = generarDatosGraficos(data);
+        setChartData(graficos);
+      } else {
+        // Set default/empty values if no data
+        setEstadisticas({
+          total: 0,
+          pendientes: 0,
+          pagados: 0,
+          vencidos: 0,
+          montoTotal: 0,
+          montoPagado: 0,
+          montoPendiente: 0,
+          clientesUnicos: 0,
+          morosidad: 0,
+          eficiencia: 0,
+          rotacion: 0,
+          ticketPromedio: 0,
+          tendenciaMonto: 0,
+          tendenciaPendientes: 0,
+          tendenciaPagados: 0,
+          tendenciaVencidos: 0
+        });
+        setChartData({
+          estados: [],
+          tendencia: [],
+          distribucion: []
+        });
+      }
       
       setError(null);
     } catch (err) {

@@ -1,18 +1,16 @@
 // components/ClienteList.jsx
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
-import useClientes from "../../hooks/useClientes";
 import BuscadorClientes from "../../components/clientes/BuscadorClientes";
 import ListaClientes from "../../components/clientes/ListaClientes";
 import ModalDetallesCliente from "../../components/clientes/ModalDetallesCliente";
-import { createCliente, deleteCliente } from "../../api/clienteApi";
 import ModalCrearCliente from "../../components/clientes/ModalCrearCliente";
 import { FiPlus, FiChevronLeft, FiChevronRight, FiUser, FiMail, FiPhone, FiCalendar } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import { useClienteStore } from "../../stores/clienteStore"; // Importamos el store de Zustand
 
 const ClienteList = () => {
-  const { clientes: clientesIniciales, loading, error } = useClientes();
-  const [clientes, setClientes] = useState([]);
+  const { clientes, isLoading, error, fetchClientes, addCliente, deleteCliente } = useClienteStore();
   const [filtroNombre, setFiltroNombre] = useState("");
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,8 +18,8 @@ const ClienteList = () => {
   const itemsPerPage = 8;
 
   useEffect(() => {
-    setClientes(clientesIniciales);
-  }, [clientesIniciales]);
+    fetchClientes(); // Cargar clientes usando la acción del store
+  }, [fetchClientes]);
 
   const clientesFiltrados = clientes.filter((cliente) =>
     cliente.nombre.toLowerCase().includes(filtroNombre.toLowerCase()) ||
@@ -48,36 +46,29 @@ const ClienteList = () => {
   const handleCloseModal = () => {
     setClienteSeleccionado(null);
   };
+
   const handleCrearCliente = async (nuevoCliente) => {
     if (!nuevoCliente) {
       console.error("Nuevo cliente es nulo o indefinido");
       return;
     }
-
     try {
-      const respuesta = await createCliente(nuevoCliente);
-      if (respuesta && respuesta.data) {
-        const clienteCreado = respuesta.data;
-        setClientes((prevClientes) => [...prevClientes, clienteCreado]);
-      } else {
-        console.error("Error al crear el cliente: respuesta inválida");
-      }
-    } catch (error) {
-      console.error("Error al crear cliente:", error);
+      await addCliente(nuevoCliente); // Usar la acción addCliente del store
+      toast.success("Cliente creado correctamente.");
+    } catch (err) {
+      console.error("Error al crear cliente:", err);
+      toast.error(err.message || "Error al crear el cliente.");
     }
   };
-
 
   // Función para eliminar un cliente
   const handleEliminarCliente = async (id) => {
     try {
-      await deleteCliente(id);
-      // Actualizar el estado eliminando el cliente
-      setClientes(prevClientes => prevClientes.filter(cliente => cliente.id !== id));
+      await deleteCliente(id); // Usar la acción deleteCliente del store
       toast.success("Cliente eliminado correctamente.");
-    } catch (error) {
-      console.error("Error al eliminar el cliente:", error);
-      toast.error(error.message || "Error al eliminar el cliente.");
+    } catch (err) {
+      console.error("Error al eliminar el cliente:", err);
+      toast.error(err.message || "Error al eliminar el cliente.");
     }
   };
 
@@ -91,7 +82,7 @@ const ClienteList = () => {
   return (
     <div className="max-w-6xl mx-auto p-6 bg-gray-900 rounded-xl shadow-2xl min-h-[calc(100vh-4rem)] flex flex-col">
       <AnimatePresence>
-        {loading ? (
+        {isLoading ? (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

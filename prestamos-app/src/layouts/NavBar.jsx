@@ -56,6 +56,7 @@ const NavBar = () => {
             <div className="overflow-hidden">
               <p className="font-medium truncate">{user.name || 'Usuario'}</p>
               <p className="text-xs text-gray-400 truncate">{user.username}</p>
+              <p className="text-xs text-gray-500 truncate font-semibold">{user.rol}</p>
             </div>
           </div>
         </div>

@@ -26,11 +26,12 @@ import {
   FiCalendar,
   FiX
 } from "react-icons/fi";
-import { actualizarEstadoPrestamo, obtenerTodosLosPrestamos } from "../../api/prestamoApi";
+import { usePrestamoStore } from "../../stores/prestamoStore";
 
 const PrestamosPage = () => {
-  const [prestamos, setPrestamos] = useState([]);
+    const { prestamos = [], isLoading, fetchPrestamos, updatePrestamoEstado } = usePrestamoStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [filteredPrestamos, setFilteredPrestamos] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState({
     crear: false,
     actualizar: false,
@@ -41,27 +42,25 @@ const PrestamosPage = () => {
     calcularMontoRestante: false,
   });
 
+  // Initialize filteredPrestamos when prestamos changes
+  useEffect(() => {
+    // Ensure we're working with an array
+    if (Array.isArray(prestamos)) {
+      setFilteredPrestamos(prestamos);
+    }
+  }, [prestamos]);
+
   // Obtener todos los préstamos al cargar la página
   useEffect(() => {
     fetchPrestamos();
-  }, []);
-
-  const fetchPrestamos = async () => {
-    try {
-      const data = await obtenerTodosLosPrestamos();
-      setPrestamos(data);
-    } catch (error) {
-      console.error("Error al obtener los préstamos:", error);
-      toast.error("Hubo un error al cargar los préstamos");
-    }
-  };
+  }, [fetchPrestamos]);
 
   // Función para actualizar el estado de un préstamo
   const actualizarEstado = async (id, nuevoEstado) => {
     try {
-      await actualizarEstadoPrestamo(id, nuevoEstado); // Llama al endpoint
+      await updatePrestamoEstado(id, nuevoEstado); // Llama a la acción del store
       toast.success("Estado del préstamo actualizado correctamente"); // Notificación de éxito
-      fetchPrestamos(); // Refresca la lista de préstamos
+      // fetchPrestamos(); // No es necesario refrescar, el store ya actualiza el estado
     } catch (error) {
       console.error("Error al actualizar el estado:", error);
       toast.error("Hubo un error al actualizar el estado del préstamo");
@@ -69,25 +68,45 @@ const PrestamosPage = () => {
   };
 
   // Filtrar préstamos basado en el término de búsqueda
-  const filteredPrestamos = prestamos.filter(prestamo => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (prestamo.cliente?.nombres?.toLowerCase().includes(searchLower)) ||
-      (prestamo.cliente?.apellidos?.toLowerCase().includes(searchLower)) ||
-      (prestamo.id?.toString().includes(searchTerm)) ||
-      (prestamo.monto?.toString().includes(searchTerm)) ||
-      (prestamo.estado?.toLowerCase().includes(searchLower))
-    );
-  });
+  const searchFilteredPrestamos = React.useMemo(() => {
+    // Ensure filteredPrestamos is an array before filtering
+    if (!Array.isArray(filteredPrestamos)) {
+      return [];
+    }
+    return filteredPrestamos.filter(prestamo => {
+      if (!searchTerm) return true;
+      // Ensure prestamo is an object before accessing properties
+      if (!prestamo) return false;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        (prestamo.cliente?.nombres?.toLowerCase().includes(searchLower)) ||
+        (prestamo.cliente?.apellidos?.toLowerCase().includes(searchLower)) ||
+        (prestamo.id?.toString().includes(searchTerm)) ||
+        (prestamo.monto?.toString().includes(searchTerm)) ||
+        (prestamo.estado?.toLowerCase().includes(searchLower))
+      );
+    });
+  }, [filteredPrestamos, searchTerm]);
+
+  // Handle filter application from modals
+  const handleFilteredPrestamos = (filtered) => {
+    setFilteredPrestamos(filtered);
+    setSearchTerm(''); // Reset search term when applying a filter
+  };
+
+  // Reset all filters
+  const resetFilters = () => {
+    setFilteredPrestamos(prestamos);
+    setSearchTerm('');
+  };
 
   // Calcular estadísticas
   const estadisticas = {
-    total: filteredPrestamos.length,
-    pagados: filteredPrestamos.filter(p => p.estado === 'PAGADO').length,
-    pendientes: filteredPrestamos.filter(p => p.estado === 'PENDIENTE').length,
-    vencidos: filteredPrestamos.filter(p => p.estado === 'VENCIDO').length,
-    montoTotal: filteredPrestamos.reduce((sum, p) => sum + (p.monto || 0), 0)
+    total: searchFilteredPrestamos.length,
+    pagados: searchFilteredPrestamos.filter(p => p.estado === 'PAGADO').length,
+    pendientes: searchFilteredPrestamos.filter(p => p.estado === 'PENDIENTE').length,
+    vencidos: searchFilteredPrestamos.filter(p => p.estado === 'VENCIDO').length,
+    montoTotal: searchFilteredPrestamos.reduce((sum, p) => sum + (p.monto || 0), 0)
   };
 
   return (
@@ -109,6 +128,13 @@ const PrestamosPage = () => {
               title="Actualizar lista"
             >
               <FiRefreshCw className="h-5 w-5" />
+            </button>
+            <button
+              onClick={resetFilters}
+              className="px-3 py-2 text-sm text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-lg border border-gray-600 transition-colors duration-200"
+              title="Restablecer filtros"
+            >
+              Restablecer filtros
             </button>
             <button
               onClick={() => setIsModalOpen({ ...isModalOpen, crear: true })}
@@ -227,53 +253,59 @@ const PrestamosPage = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Modales */}
+      <CrearPrestamoModal
+        isOpen={isModalOpen.crear}
+        onClose={() => setIsModalOpen({ ...isModalOpen, crear: false })}
+        onCreado={fetchPrestamos}
+      />
+      <ActualizarPrestamoModal
+        isOpen={isModalOpen.actualizar}
+        onClose={() => setIsModalOpen({ ...isModalOpen, actualizar: false })}
+        onActualizado={fetchPrestamos}
+      />
+      <BuscarPrestamoModal
+        isOpen={isModalOpen.buscar}
+        onClose={() => setIsModalOpen({ ...isModalOpen, buscar: false })}
+      />
+      <FiltrarPorClienteModal
+        isOpen={isModalOpen.filtrarCliente}
+        onClose={() => setIsModalOpen({ ...isModalOpen, filtrarCliente: false })}
+        onFiltrado={handleFilteredPrestamos}
+        allPrestamos={prestamos}
+      />
+      <FiltrarPorEstadoModal
+        isOpen={isModalOpen.filtrarEstado}
+        onClose={() => setIsModalOpen({ ...isModalOpen, filtrarEstado: false })}
+        onFiltrado={handleFilteredPrestamos}
+        allPrestamos={prestamos}
+      />
+      <CalcularInteresModal
+        isOpen={isModalOpen.calcularInteres}
+        onClose={() => setIsModalOpen({ ...isModalOpen, calcularInteres: false })}
+      />
+      <CalcularMontoRestanteModal
+        isOpen={isModalOpen.calcularMontoRestante}
+        onClose={() =>
+          setIsModalOpen({ ...isModalOpen, calcularMontoRestante: false })
+        }
+      />
 
-        {/* Lista de Préstamos */}
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-          <div className="overflow-x-auto">
-            <PrestamosList
-              prestamos={filteredPrestamos}
-              onEliminar={fetchPrestamos}
-              onActualizarEstado={actualizarEstado}
-            />
+      {/* Lista de Préstamos */}
+      <div className="bg-gray-800/50 backdrop-blur-lg rounded-2xl shadow-xl p-6 border border-gray-700/30">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
           </div>
-        </div>
-
-        {/* Modales */}
-        <CrearPrestamoModal
-          isOpen={isModalOpen.crear}
-          onClose={() => setIsModalOpen({ ...isModalOpen, crear: false })}
-          onCreado={fetchPrestamos}
-        />
-        <ActualizarPrestamoModal
-          isOpen={isModalOpen.actualizar}
-          onClose={() => setIsModalOpen({ ...isModalOpen, actualizar: false })}
-          onActualizado={fetchPrestamos}
-        />
-        <BuscarPrestamoModal
-          isOpen={isModalOpen.buscar}
-          onClose={() => setIsModalOpen({ ...isModalOpen, buscar: false })}
-        />
-        <FiltrarPorClienteModal
-          isOpen={isModalOpen.filtrarCliente}
-          onClose={() => setIsModalOpen({ ...isModalOpen, filtrarCliente: false })}
-          onFiltrado={setPrestamos}
-        />
-        <FiltrarPorEstadoModal
-          isOpen={isModalOpen.filtrarEstado}
-          onClose={() => setIsModalOpen({ ...isModalOpen, filtrarEstado: false })}
-          onFiltrado={setPrestamos}
-        />
-        <CalcularInteresModal
-          isOpen={isModalOpen.calcularInteres}
-          onClose={() => setIsModalOpen({ ...isModalOpen, calcularInteres: false })}
-        />
-        <CalcularMontoRestanteModal
-          isOpen={isModalOpen.calcularMontoRestante}
-          onClose={() =>
-            setIsModalOpen({ ...isModalOpen, calcularMontoRestante: false })
-          }
-        />
+        ) : (
+          <PrestamosList 
+            prestamos={searchFilteredPrestamos} 
+            onEliminar={fetchPrestamos}
+            onActualizarEstado={actualizarEstado}
+          />
+        )}
       </div>
     </div>
   );

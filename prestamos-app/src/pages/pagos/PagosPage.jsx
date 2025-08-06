@@ -1,10 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  obtenerPagosPorPrestamo,
-  registrarPago,
-  calcularMontoRestante,
-} from "../../api/pagoApi";
 import { obtenerTodosLosPrestamos } from "../../api/prestamoApi";
 import { toast } from "react-toastify";
 import MontoRestante from "../../components/pagos/MontoRestante";
@@ -15,26 +10,25 @@ import DetallePagoModal from "../../components/pagos/DetallePagoModal";
 // Iconos
 import { FaSearch, FaMoneyBillWave, FaUserAlt, FaClock, FaCheckCircle, FaMoneyBillAlt, FaEye } from "react-icons/fa";
 import TimelinePagos from '../../components/pagos/TimelinePagos';
+import { usePagoStore } from "../../stores/pagoStore";
 
 const PagosPage = () => {
   const { prestamoId } = useParams();
   const navigate = useNavigate();
-  const [pagos, setPagos] = useState([]);
+  const { pagos, isLoading, error, fetchPagosPorPrestamo, addPago, removePago } = usePagoStore();
   const [prestamos, setPrestamos] = useState([]);
   const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
-  const [montoRestante, setMontoRestante] = useState(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
   const [pagoSeleccionado, setPagoSeleccionado] = useState(null);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState("");
 
   // Cargar préstamos al montar el componente o cuando cambia el prestamoId
   useEffect(() => {
     const cargarPrestamos = async () => {
       try {
-        setCargando(true);
+        // setCargando(true); // Removed, isLoading from store
         const data = await obtenerTodosLosPrestamos();
         setPrestamos(data || []);
         
@@ -43,21 +37,18 @@ const PagosPage = () => {
           const prestamo = data.find(p => p.id === Number(prestamoId));
           if (prestamo) {
             setPrestamoSeleccionado(prestamo);
-            // No es necesario navegar si ya estamos en la ruta correcta
-            // navigate(`/pagos/${prestamoId}`);
-            await cargarPagos();
-            await calcularMontoRestantePrestamo();
+            await fetchPagosPorPrestamo(prestamo.id);
           } else {
             // Si el préstamo no se encuentra, redirigir a la lista de pagos
             navigate('/pagos');
             toast.error('Préstamo no encontrado');
           }
         }
-      } catch (error) {
-        console.error("Error al cargar préstamos:", error);
+      } catch (err) { // Changed error to err to avoid conflict with store's error
+        console.error("Error al cargar préstamos:", err);
         toast.error("No se pudieron cargar los préstamos");
       } finally {
-        setCargando(false);
+        // setCargando(false); // Removed
       }
     };
 
@@ -65,68 +56,35 @@ const PagosPage = () => {
   }, [prestamoId, navigate]);
 
 // Función para cargar los pagos de un préstamo específico
-const cargarPagos = async () => {
-  if (!prestamoId) return;
-  
-  setCargando(true);
-  setError(null);
-  
-  try {
-    const response = await obtenerPagosPorPrestamo(Number(prestamoId));
-    console.log("Datos recibidos del backend:", response);
-    
-    // La API devuelve un array directo según pagoApi.ts
-    if (Array.isArray(response)) {
-      setPagos(response);
-      
-      // Calcular el monto restante después de cargar los pagos
-      if (prestamoSeleccionado) {
-        const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
-        const montoPagado = response.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0);
-        const montoRestanteCalculado = Math.max(0, montoTotal - montoPagado);
-        setMontoRestante(montoRestanteCalculado);
-      }
-    } else {
-      console.error("La respuesta del backend no es un array:", response);
-      toast.error("Error: Formato de respuesta inesperado");
-      setPagos([]);
-    }
-  } catch (error) {
-    console.error("Error al cargar los pagos:", error);
-    setError("No se pudieron cargar los pagos");
-    toast.error("Error al cargar los pagos");
-  } finally {
-    setCargando(false);
-  }
-};
-
-  // Función para calcular el monto restante de un préstamo
-  const calcularMontoRestantePrestamo = async () => {
-    if (!prestamoId || !prestamoSeleccionado) return;
-    
+  // Función para cargar los pagos de un préstamo específico
+  const cargarPagos = async (id) => {
+    if (!id) return;
     try {
-      setCargando(true);
-      const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
-      let montoPagado = 0;
-      
-      // Asegurarse de que los pagos estén cargados
-      if (pagos && pagos.length > 0) {
-        montoPagado = pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0);
-      }
-      
-      // Calcular el monto restante (no puede ser menor que 0)
-      const montoRestanteCalculado = Math.max(0, montoTotal - montoPagado);
-      
-      setMontoRestante(montoRestanteCalculado);
-      return montoRestanteCalculado;
-    } catch (error) {
-      console.error("Error al calcular el monto restante:", error);
-      toast.error("Error al calcular el monto restante");
-      return null;
-    } finally {
-      setCargando(false);
+      await fetchPagosPorPrestamo(id);
+    } catch (err) {
+      console.error("Error al cargar los pagos:", err);
+      toast.error("Error al cargar los pagos");
     }
   };
+
+  // Calcular el total pagado y el monto restante usando useMemo
+  const totalPagado = useMemo(() => {
+    if (!pagos || pagos.length === 0) return 0;
+    return pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0);
+  }, [pagos]);
+
+  const montoRestante = useMemo(() => {
+    if (!prestamoSeleccionado) return 0;
+    const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
+    return Math.max(0, montoTotal - totalPagado);
+  }, [prestamoSeleccionado, totalPagado]);
+
+  const progreso = useMemo(() => {
+    if (!prestamoSeleccionado || !totalPagado) return 0;
+    const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
+    if (montoTotal === 0) return 0;
+    return Math.min(100, (totalPagado / montoTotal) * 100);
+  }, [prestamoSeleccionado, totalPagado]);
 
   // Función para registrar un nuevo pago
   const registrarNuevoPago = async (pago) => {
@@ -137,7 +95,7 @@ const cargarPagos = async () => {
     }
     
     try {
-      setCargando(true);
+      // setCargando(true); // Removed
       
       // Validar el monto
       const montoPago = Number(pago.montoPago);
@@ -146,7 +104,7 @@ const cargarPagos = async () => {
       }
       
       // Validar que el monto no exceda el saldo pendiente
-      const montoRestanteActual = await calcularMontoRestantePrestamo();
+      const montoRestanteActual = montoRestante;
       
       if (montoRestanteActual === null) {
         throw new Error("No se pudo calcular el monto restante del préstamo");
@@ -170,38 +128,37 @@ const cargarPagos = async () => {
       });
       
       // Registrar el pago
-      await registrarPago(prestamoSeleccionado.id, pagoData);
+      await addPago(prestamoSeleccionado.id, pagoData); // Use addPago from store
       
       // Mostrar mensaje de éxito
       toast.success("✓ Pago registrado correctamente");
       
       // Actualizar la lista de pagos y el monto restante
       await Promise.all([
-        cargarPagos(),
-        calcularMontoRestantePrestamo()
+        cargarPagos(prestamoSeleccionado.id),
       ]);
       
       // Cerrar el modal
       setIsModalOpen(false);
       
       return true;
-    } catch (error) {
-      console.error("Error al registrar el pago:", error);
+    } catch (err) { // Changed error to err
+      console.error("Error al registrar el pago:", err);
       
       // Mostrar mensaje de error más descriptivo
       let mensajeError = "Error al registrar el pago";
-      if (error.message) {
-        mensajeError = error.message;
-      } else if (error.response?.data?.message) {
-        mensajeError = error.response.data.message;
-      } else if (error.response?.data) {
-        mensajeError = JSON.stringify(error.response.data);
+      if (err.message) { // Changed error to err
+        mensajeError = err.message;
+      } else if (err.response?.data?.message) { // Changed error to err
+        mensajeError = err.response.data.message;
+      } else if (err.response?.data) { // Changed error to err
+        mensajeError = JSON.stringify(err.response.data);
       }
       
       toast.error(mensajeError);
       return false;
     } finally {
-      setCargando(false);
+      // setCargando(false); // Removed
     }
   };
 
@@ -212,15 +169,26 @@ const cargarPagos = async () => {
   };
 
   // Filtrar préstamos según la búsqueda
-  const prestamosFiltrados = prestamos.filter(prestamo => {
-    if (!busqueda) return true;
+  const prestamosFiltrados = React.useMemo(() => {
+    if (!Array.isArray(prestamos)) {
+      return [];
+    }
+    if (!busqueda) return prestamos;
+
     const busquedaMin = busqueda.toLowerCase();
-    return (
-      (prestamo.clienteId?.toString() || '').toLowerCase().includes(busquedaMin) ||
-      (prestamo.id?.toString() || '').toLowerCase().includes(busquedaMin) ||
-      (prestamo.estado?.toLowerCase() || '').includes(busquedaMin)
-    );
-  });
+    return prestamos.filter(prestamo => {
+      // Safely access nested properties
+      const clienteNombres = prestamo.cliente?.nombres?.toLowerCase() || '';
+      const clienteApellidos = prestamo.cliente?.apellidos?.toLowerCase() || '';
+      const prestamoId = prestamo.id?.toString() || '';
+
+      return (
+        clienteNombres.includes(busquedaMin) ||
+        clienteApellidos.includes(busquedaMin) ||
+        prestamoId.includes(busquedaMin)
+      );
+    });
+  }, [prestamos, busqueda]);
 
   const seleccionarPrestamo = async (prestamo) => {
     setPrestamoSeleccionado(prestamo);
@@ -236,7 +204,7 @@ const cargarPagos = async () => {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
             <div>
               <h1 className="text-2xl font-bold text-blue-400">Seleccione un Préstamo</h1>
-              <p className="text-gray-600 mt-1">Seleccione un préstamo para ver su historial de pagos</p>
+              <span className="mt-1 text-sm text-gray-400">Selecciona un préstamo para ver o registrar sus pagos.</span>
             </div>
             <div className="mt-4 md:mt-0">
               <button
@@ -266,7 +234,7 @@ const cargarPagos = async () => {
           </div>
 
           {/* Lista de préstamos */}
-          {cargando ? (
+          {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
               <p className="mt-2 text-gray-600">Cargando préstamos...</p>
@@ -349,9 +317,9 @@ const cargarPagos = async () => {
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700 shadow-lg">
-              <p className="text-gray-500">
+              <div className="text-gray-500">
                 <p className="text-gray-300">{busqueda ? 'No se encontraron préstamos que coincidan con la búsqueda' : 'No hay préstamos disponibles'}</p>
-              </p>
+              </div>
             </div>
           )}
         </div>
@@ -388,7 +356,7 @@ const cargarPagos = async () => {
         {prestamoSeleccionado && prestamoSeleccionado.estado !== 'PAGADO' && (
           <button
             onClick={() => setIsModalOpen(true)}
-            disabled={cargando}
+            disabled={isLoading}
             className="flex items-center bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-lg shadow-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105"
           >
             <svg className="w-4 h-4 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -425,9 +393,7 @@ const cargarPagos = async () => {
             <div>
               <p className="text-sm text-gray-400 font-medium">Pagado</p>
               <p className="text-2xl font-bold text-green-400">
-                S/ {pagos && pagos.length > 0 ? 
-                  pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : 
-                  '0.00'}
+                S/ {totalPagado.toFixed(2)}
               </p>
             </div>
             <div className="p-3 bg-green-500/20 rounded-full backdrop-blur-sm">
@@ -445,9 +411,7 @@ const cargarPagos = async () => {
             <div>
               <p className="text-sm text-gray-400 font-medium">Por Pagar</p>
               <p className="text-2xl font-bold text-amber-400">
-                S/ {montoRestante !== null ? 
-                  Math.max(0, montoRestante).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : 
-                  (prestamoSeleccionado?.monto?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00')}
+                S/ {montoRestante.toFixed(2)}
               </p>
             </div>
             <div className="p-3 bg-amber-500/20 rounded-full backdrop-blur-sm">
@@ -469,9 +433,9 @@ const cargarPagos = async () => {
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
+            disabled={isLoading || (prestamoSeleccionado?.estado === 'PAGADO')}
             className={`inline-flex items-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 ${
-              cargando || (prestamoSeleccionado?.estado === 'PAGADO') ? 'opacity-50 cursor-not-allowed' : ''
+              isLoading || (prestamoSeleccionado?.estado === 'PAGADO') ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           >
             <FaMoneyBillWave className="mr-2" />
@@ -493,9 +457,9 @@ const cargarPagos = async () => {
             <div className="mt-6">
               <button
                 onClick={() => setIsModalOpen(true)}
-                disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
+                disabled={isLoading || (prestamoSeleccionado?.estado === 'PAGADO')}
                 className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
-                  cargando || (prestamoSeleccionado?.estado === 'PAGADO')
+                  isLoading || (prestamoSeleccionado?.estado === 'PAGADO')
                     ? 'bg-gray-600 cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
                 }`}
@@ -542,7 +506,7 @@ const cargarPagos = async () => {
               <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5 hover:bg-gray-800/70 transition-colors duration-200">
                 <h3 className="text-gray-400 text-xs font-medium mb-1">Por Pagar</h3>
                 <p className="text-xl font-bold text-amber-400">
-                  S/ {montoRestante?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00'}
+                  S/ {montoRestante.toFixed(2)}
                 </p>
                 <div className="mt-2 text-xs text-gray-400">
                   <span className="flex items-center">
@@ -555,8 +519,7 @@ const cargarPagos = async () => {
               <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-5 hover:bg-gray-800/70 transition-colors duration-200">
                 <h3 className="text-gray-400 text-xs font-medium mb-1">Total pagado</h3>
                 <p className="text-xl font-bold text-green-400">
-                  S/ {pagos && pagos.length > 0 ? 
-                      pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0).toLocaleString('es-PE', { minimumFractionDigits: 2 }) : '0.00'}
+                  S/ {totalPagado.toFixed(2)}
                 </p>
                 <div className="mt-2 text-xs text-gray-400">
                   <span className="flex items-center">
@@ -581,9 +544,9 @@ const cargarPagos = async () => {
                   </div>
                   <button
                     onClick={() => setIsModalOpen(true)}
-                    disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
+                    disabled={isLoading || (prestamoSeleccionado?.estado === 'PAGADO')}
                     className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
-                      cargando || prestamoSeleccionado?.estado === 'PAGADO' 
+                      isLoading || prestamoSeleccionado?.estado === 'PAGADO' 
                         ? 'bg-gray-600 cursor-not-allowed' 
                         : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
                     }`}
@@ -629,26 +592,14 @@ const cargarPagos = async () => {
           </div>
           <div className="flex space-x-2 w-full sm:w-auto">
             <BotonActualizarLista 
-              onRefresh={cargarPagos} 
-              disabled={cargando} 
+              onRefresh={() => cargarPagos(prestamoSeleccionado.id)} 
+              disabled={isLoading} 
               className="bg-gray-700 hover:bg-gray-600 text-white"
             />
-            <button
-              onClick={calcularMontoRestantePrestamo}
-              disabled={cargando}
-              className={`p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg border border-gray-600 transition-colors duration-200 ${
-                cargando ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              title="Actualizar monto restante"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
           </div>
         </div>
         
-        {cargando && pagos.length === 0 ? (
+        {isLoading && pagos.length === 0 ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
             <p className="mt-2 text-gray-400">Cargando pagos...</p>
@@ -725,9 +676,9 @@ const cargarPagos = async () => {
             <div className="mt-6">
               <button
                 onClick={() => setIsModalOpen(true)}
-                disabled={cargando || (prestamoSeleccionado?.estado === 'PAGADO')}
+                disabled={isLoading || (prestamoSeleccionado?.estado === 'PAGADO')}
                 className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white transition-all duration-200 ${
-                  cargando || (prestamoSeleccionado?.estado === 'PAGADO')
+                  isLoading || (prestamoSeleccionado?.estado === 'PAGADO')
                     ? 'bg-gray-600 cursor-not-allowed'
                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:scale-105'
                 }`}
@@ -760,7 +711,7 @@ const cargarPagos = async () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onPagoRegistrado={registrarNuevoPago}
-        cargando={cargando}
+        cargando={isLoading}
         prestamoId={prestamoSeleccionado?.id}
       />
       

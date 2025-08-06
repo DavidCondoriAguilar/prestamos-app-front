@@ -6,11 +6,11 @@ const BASE_URL = import.meta.env.PROD
 
 const API_URLS = {
   BASE_URL,
-  CUENTAS: "/api/cuentas",
-  CLIENTES: "/api/clientes",
-  PRESTAMOS: "/api/prestamos",
-  PAGOS: "/api/pagos",
-  AUTH: "/api/auth",  
+  CUENTAS: "/cuentas",
+  CLIENTES: "/clientes",
+  PRESTAMOS: "/prestamos",
+  PAGOS: "/pagos",
+  AUTH: "/auth",  
 };
 
 export default API_URLS;

@@ -1,4 +1,5 @@
-import { createContext, useState, useContext } from 'react';
+import { createContext, useState, useContext, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import authApi from '../api/authApi';
 
 const AuthContext = createContext();
@@ -23,9 +24,11 @@ export const AuthProvider = ({ children }) => {
       
       const response = await authApi.login({ username, password });
       
+      const decodedToken = jwtDecode(response.token);
       const userData = { 
         username: response.username, 
-        name: response.name 
+        name: response.name,
+        rol: decodedToken.rol
       };
       
       setUser(userData);
@@ -90,6 +93,24 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwtDecode(token);
+        if (decodedToken.exp * 1000 < Date.now()) {
+          logout();
+        } else {
+          const storedUser = localStorage.getItem('user');
+          const userData = storedUser ? JSON.parse(storedUser) : {};
+          setUser({ ...userData, rol: decodedToken.rol });
+        }
+      } catch (error) {
+        logout();
+      }
+    }
+  }, []);
 
   return (
     <AuthContext.Provider value={{ 

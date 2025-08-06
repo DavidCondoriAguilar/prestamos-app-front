@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { FaInfoCircle, FaWallet, FaMoneyCheckAlt } from "react-icons/fa";
-import useClientes from "../../hooks/useClientes";
+import { useClienteStore } from "../../stores/clienteStore"; // Importamos el store de Zustand
 
 const ClienteDetail = () => {
   const { id } = useParams();
-  const { fetchClienteById } = useClientes();
+  const { clientes, isLoading, fetchClientes } = useClienteStore(); // Obtenemos clientes, isLoading y la acción fetchClientes del store
   const [cliente, setCliente] = useState(null);
 
   useEffect(() => {
-    const fetchCliente = async () => {
-      const data = await fetchClienteById(id);
-      setCliente(data);
-    };
-    fetchCliente();
-  }, [id, fetchClienteById]);
+    if (clientes.length === 0) {
+      fetchClientes(); // Si los clientes no están cargados, los cargamos
+    }
+  }, [clientes, fetchClientes]);
+
+  useEffect(() => {
+    if (clientes.length > 0) {
+      const foundCliente = clientes.find(c => c.id === parseInt(id));
+      setCliente(foundCliente);
+    }
+  }, [id, clientes]);
 
   if (!cliente) return <p className="text-center mt-6 text-lg">Cargando...</p>;
 
