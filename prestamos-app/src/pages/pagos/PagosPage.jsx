@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { obtenerTodosLosPrestamos } from "../../api/prestamoApi";
+import { obtenerTodosLosPrestamos, actualizarEstadoPrestamo } from "../../api/prestamoApi";
+import { verificarYActualizarEstadoPrestamo } from "../../api/pagoApi";
 import { toast } from "react-toastify";
 import MontoRestante from "../../components/pagos/MontoRestante";
 import BotonActualizarLista from "../../components/pagos/BotonActualizarLista";
@@ -8,7 +9,7 @@ import ListaPagos from "../../components/pagos/ListaPagos";
 import ModalRegistroPago from "../../components/pagos/ModalRegistroPago";
 import DetallePagoModal from "../../components/pagos/DetallePagoModal";
 // Iconos
-import { FaSearch, FaMoneyBillWave, FaUserAlt, FaClock, FaCheckCircle, FaMoneyBillAlt, FaEye } from "react-icons/fa";
+import { FaSearch, FaMoneyBillWave, FaUserAlt, FaClock, FaCheckCircle, FaMoneyBillAlt, FaEye, FaPercentage } from "react-icons/fa";
 import TimelinePagos from '../../components/pagos/TimelinePagos';
 import { usePagoStore } from "../../stores/pagoStore";
 
@@ -67,98 +68,69 @@ const PagosPage = () => {
     }
   };
 
-  // Calcular el total pagado y el monto restante usando useMemo
+  // Calcular el total pagado, monto con intereses y monto restante usando useMemo
   const totalPagado = useMemo(() => {
     if (!pagos || pagos.length === 0) return 0;
     return pagos.reduce((total, pago) => total + (parseFloat(pago.montoPago) || 0), 0);
   }, [pagos]);
 
-  const montoRestante = useMemo(() => {
+  const montoTotalConInteres = useMemo(() => {
     if (!prestamoSeleccionado) return 0;
-    const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
-    return Math.max(0, montoTotal - totalPagado);
-  }, [prestamoSeleccionado, totalPagado]);
+    const montoBase = parseFloat(prestamoSeleccionado.monto) || 0;
+    const interes = parseFloat(prestamoSeleccionado.interes || 0) / 100; // Convertir porcentaje a decimal
+    return montoBase + (montoBase * interes);
+  }, [prestamoSeleccionado]);
+
+  const montoRestante = useMemo(() => {
+    return Math.max(0, montoTotalConInteres - totalPagado);
+  }, [montoTotalConInteres, totalPagado]);
 
   const progreso = useMemo(() => {
-    if (!prestamoSeleccionado || !totalPagado) return 0;
-    const montoTotal = parseFloat(prestamoSeleccionado.monto) || 0;
-    if (montoTotal === 0) return 0;
-    return Math.min(100, (totalPagado / montoTotal) * 100);
-  }, [prestamoSeleccionado, totalPagado]);
+    if (!montoTotalConInteres || !totalPagado) return 0;
+    if (montoTotalConInteres === 0) return 0;
+    return Math.min(100, (totalPagado / montoTotalConInteres) * 100);
+  }, [montoTotalConInteres, totalPagado]);
 
   // Función para registrar un nuevo pago
   const registrarNuevoPago = async (pago) => {
     if (!prestamoSeleccionado?.id) {
       toast.error("No se ha seleccionado un préstamo válido");
-      console.error("No hay préstamo seleccionado o el ID es inválido");
       return false;
     }
-    
+
     try {
-      // setCargando(true); // Removed
-      
-      // Validar el monto
-      const montoPago = Number(pago.montoPago);
+      const montoPago = parseFloat(pago.montoPago);
       if (isNaN(montoPago) || montoPago <= 0) {
-        throw new Error("El monto del pago debe ser mayor a cero");
+        toast.error("El monto del pago debe ser un número positivo.");
+        return false;
       }
-      
-      // Validar que el monto no exceda el saldo pendiente
-      const montoRestanteActual = montoRestante;
-      
-      if (montoRestanteActual === null) {
-        throw new Error("No se pudo calcular el monto restante del préstamo");
+
+      if (montoPago > montoRestante) {
+        toast.warn(`El monto del pago (S/ ${montoPago.toFixed(2)}) no puede exceder el saldo pendiente (S/ ${montoRestante.toFixed(2)}).`);
+        return false;
       }
-      
-      if (montoPago > montoRestanteActual) {
-        throw new Error(`El monto excede el saldo pendiente de S/ ${montoRestanteActual.toFixed(2)}`);
+
+      const exito = await addPago(prestamoSeleccionado.id, pago);
+
+      if (exito) {
+        toast.success("Pago registrado con éxito");
+        await cargarPagos(prestamoSeleccionado.id);
+
+        // Verificar y actualizar el estado del préstamo
+        const prestamoActualizado = await verificarYActualizarEstadoPrestamo(prestamoSeleccionado.id);
+        if (prestamoActualizado && prestamoActualizado.estado !== prestamoSeleccionado.estado) {
+          setPrestamoSeleccionado(prestamoActualizado);
+          toast.info(`El estado del préstamo ha sido actualizado a: ${prestamoActualizado.estado}`);
+        }
+
+        setIsModalOpen(false);
+        return true;
       }
-      
-      // Usar el objeto de pago completo que viene del modal
-      // para preservar la marca de tiempo exacta
-      const pagoData = {
-        montoPago: montoPago,
-        fecha: pago.fecha, // Mantener la fecha ISO completa con hora
-        fechaHora: pago.fechaHora // Mantener el timestamp para ordenamiento
-      };
-      
-      console.log("Intentando registrar pago con datos:", {
-        prestamoId: prestamoSeleccionado.id,
-        pagoData
-      });
-      
-      // Registrar el pago
-      await addPago(prestamoSeleccionado.id, pagoData); // Use addPago from store
-      
-      // Mostrar mensaje de éxito
-      toast.success("✓ Pago registrado correctamente");
-      
-      // Actualizar la lista de pagos y el monto restante
-      await Promise.all([
-        cargarPagos(prestamoSeleccionado.id),
-      ]);
-      
-      // Cerrar el modal
-      setIsModalOpen(false);
-      
-      return true;
-    } catch (err) { // Changed error to err
-      console.error("Error al registrar el pago:", err);
-      
-      // Mostrar mensaje de error más descriptivo
-      let mensajeError = "Error al registrar el pago";
-      if (err.message) { // Changed error to err
-        mensajeError = err.message;
-      } else if (err.response?.data?.message) { // Changed error to err
-        mensajeError = err.response.data.message;
-      } else if (err.response?.data) { // Changed error to err
-        mensajeError = JSON.stringify(err.response.data);
-      }
-      
-      toast.error(mensajeError);
       return false;
-    } finally {
-      // setCargando(false); // Removed
+    } catch (err) {
+      console.error("Error al registrar el pago:", err);
+      toast.error(err.message || "Error al registrar el pago");
+      return false;
     }
   };
 
@@ -369,21 +341,57 @@ const PagosPage = () => {
 
       {/* Sección de resumen con estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Tarjeta de monto total */}
+        {/* Tarjeta de préstamo inicial */}
         <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-400 font-medium">Monto Total</p>
+              <p className="text-sm text-gray-400 font-medium">Préstamo Inicial</p>
               <p className="text-2xl font-bold text-white">
                 S/ {prestamoSeleccionado?.monto?.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00'}
               </p>
             </div>
-            <div className="p-3 bg-indigo-500/20 rounded-full backdrop-blur-sm">
-              <FaMoneyBillAlt className="w-6 h-6 text-indigo-400" />
+            <div className="p-3 bg-blue-500/20 rounded-full backdrop-blur-sm">
+              <FaMoneyBillWave className="w-6 h-6 text-blue-400" />
             </div>
           </div>
           <div className="mt-4 pt-4 border-t border-gray-700">
-            <p className="text-xs text-gray-400">Préstamo inicial</p>
+            <p className="text-xs text-gray-400">Monto original del préstamo</p>
+          </div>
+        </div>
+
+        {/* Tarjeta de intereses */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-400 font-medium">Interés ({prestamoSeleccionado?.interes || 0}%)</p>
+              <p className="text-2xl font-bold text-amber-400">
+                S/ {(montoTotalConInteres - (prestamoSeleccionado?.monto || 0)).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div className="p-3 bg-amber-500/20 rounded-full backdrop-blur-sm">
+              <FaPercentage className="w-6 h-6 text-amber-400" />
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-xs text-gray-400">Costo por el préstamo</p>
+          </div>
+        </div>
+
+        {/* Tarjeta de monto total con intereses */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-400 font-medium">Total a Pagar</p>
+              <p className="text-2xl font-bold text-green-400">
+                S/ {montoTotalConInteres.toLocaleString('es-PE', { minimumFractionDigits: 2 }) || '0.00'}
+              </p>
+            </div>
+            <div className="p-3 bg-green-500/20 rounded-full backdrop-blur-sm">
+              <FaMoneyBillAlt className="w-6 h-6 text-green-400" />
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-700">
+            <p className="text-xs text-gray-400">Préstamo + intereses</p>
           </div>
         </div>
 

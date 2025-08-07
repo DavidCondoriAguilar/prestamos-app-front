@@ -10,8 +10,11 @@ import {
   FiRefreshCw,
   FiInfo,
   FiPieChart,
-  FiBarChart2
+  FiBarChart2,
+  FiAlertCircle
 } from 'react-icons/fi';
+import { FaExclamationTriangle } from 'react-icons/fa';
+import MoraSummaryCard from '../../components/dashboard/MoraSummaryCard';
 import { obtenerTodosLosPrestamos } from '../../api/prestamoApi';
 import DonutChart from '../../components/charts/DonutChart';
 import BarChart from '../../components/charts/BarChart';
@@ -411,14 +414,37 @@ const Dashboard = () => {
           trendLabel={vencidos > 0 ? "¡Atención!" : "Sin vencidos"}
           loading={cargando}
         />
-        <StatCard
-          title="Ticket Promedio"
-          value={formatCurrency(ticketPromedio)}
-          icon={<FiDollarSign />}
-          trend={2.8}
-          trendLabel="vs mes pasado"
-          loading={cargando}
-        />
+        {/* Reemplazamos la tarjeta de Ticket Promedio por la de Préstamos en Mora */}
+        <motion.div 
+          className="bg-gradient-to-br from-red-900/30 to-red-800/20 p-5 rounded-xl border border-red-900/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+          whileHover={{ scale: 1.02 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="text-sm font-medium text-red-300 uppercase tracking-wider">En Morosos</h3>
+              <p className="text-2xl font-bold text-white">
+                {cargando ? '...' : vencidos}
+              </p>
+            </div>
+            <div className="p-2 bg-red-500/20 rounded-lg">
+              <FaExclamationTriangle className="w-5 h-5 text-red-400" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="flex items-center text-xs text-red-300">
+              <FiAlertCircle className="mr-1" />
+              <span>{vencidos > 0 ? "¡Acción requerida!" : "Todo bajo control"}</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+      
+      {/* Tercera fila con la tarjeta de resumen de mora */}
+      <div className="grid grid-cols-1 gap-5 mb-8 w-full">
+        <MoraSummaryCard />
       </div>
 
       {/* Sección de gráficos interactivos */}

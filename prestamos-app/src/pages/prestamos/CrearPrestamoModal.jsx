@@ -1,23 +1,31 @@
 import React, { useState } from "react";
-import { crearPrestamo } from "../../api/prestamoApi";
+import { crearPrestamo } from "../../api/prestamoApi.ts";
 import { toast } from "react-toastify"; // Importa toast desde react-toastify
 import FormularioCrearPrestamo from "../../components/prestamos/FormularioCrearPrestamo";
 
 const CrearPrestamoModal = ({ isOpen, onClose, onCreado }) => {
   const handleSubmit = async (nuevoPrestamo) => {
     try {
-      // Llamar al backend para crear el préstamo
-      const resultado = await crearPrestamo(nuevoPrestamo);
-      if (resultado) {
+      const { data, error } = await crearPrestamo(nuevoPrestamo);
+
+      if (error) {
+        toast.error(error, {
+          position: "top-right",
+          autoClose: 5000, // Más tiempo para leer el error
+        });
+      } else if (data) {
         toast.success("Préstamo creado exitosamente", {
           position: "top-right",
           autoClose: 3000,
         });
-        onCreado(); // Notificar al padre que se actualice la lista
+        if (onCreado) {
+          onCreado(); // Notificar al padre para actualizar
+        }
         onClose(); // Cerrar el modal
       }
     } catch (error) {
-      toast.error("Error al crear el préstamo", {
+      console.error("Error inesperado al crear el préstamo:", error);
+      toast.error("Ocurrió un error inesperado. Inténtelo de nuevo.", {
         position: "top-right",
         autoClose: 3000,
       });

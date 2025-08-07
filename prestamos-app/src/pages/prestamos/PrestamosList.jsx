@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { obtenerPrestamoPorId, eliminarPrestamo, actualizarEstadoPrestamo } from "../../api/prestamoApi";
 import { toast } from "react-toastify"; // Para notificaciones
 import "react-toastify/dist/ReactToastify.css";
@@ -76,6 +77,22 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
   const paginaAnterior = () => setPaginaActual(prev => Math.max(prev - 1, 1));
   const paginaSiguiente = () => setPaginaActual(prev => Math.min(prev + 1, totalPaginas));
 
+  const listVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.07,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 },
+    exit: { opacity: 0, x: -50, transition: { duration: 0.3 } },
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-4 sm:p-6">
       {/* Tarjeta contenedora */}
@@ -129,35 +146,42 @@ const PrestamosList = ({ prestamos, onEliminar }) => {
               </thead>
 
               {/* Cuerpo de la tabla */}
-              <tbody className="divide-y divide-gray-700/30">
-                {prestamosActuales.length > 0 ? (
-                  prestamosActuales.map((prestamo) => (
-                    <PrestamoTablaFila
-                      key={prestamo.id}
-                      prestamo={prestamo}
-                      onVerDetalles={handleVerDetalles}
-                      onEliminar={handleEliminarPrestamo}
-                      onActualizarEstado={handleActualizarEstado}
-                      onActualizarPrestamo={() => handleAbrirModalActualizar(prestamo)}
-                      className="hover:bg-gray-700/30 transition-colors duration-150"
-                    />
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center justify-center">
-                        <div className="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mb-4">
-                          <FiDollarSign className="h-10 w-10 text-gray-500" />
+              <motion.tbody 
+                className="divide-y divide-gray-700/30"
+                variants={listVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <AnimatePresence>
+                  {prestamosActuales.length > 0 ? (
+                    prestamosActuales.map((prestamo) => (
+                      <PrestamoTablaFila
+                        key={prestamo.id}
+                        prestamo={prestamo}
+                        onVerDetalles={handleVerDetalles}
+                        onEliminar={handleEliminarPrestamo}
+                        onActualizarEstado={handleActualizarEstado}
+                        onActualizarPrestamo={() => handleAbrirModalActualizar(prestamo)}
+                        variants={itemVariants}
+                      />
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-20 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mb-4">
+                            <FiDollarSign className="h-10 w-10 text-gray-500" />
+                          </div>
+                          <h3 className="text-lg font-medium text-gray-200 mb-1">No hay préstamos registrados</h3>
+                          <p className="text-gray-400 max-w-md">
+                            Parece que aún no has registrado ningún préstamo. Comienza creando uno nuevo para empezar a gestionar tus préstamos.
+                          </p>
                         </div>
-                        <h3 className="text-lg font-medium text-gray-200 mb-1">No hay préstamos registrados</h3>
-                        <p className="text-gray-400 max-w-md">
-                          Parece que aún no has registrado ningún préstamo. Comienza creando uno nuevo para empezar a gestionar tus préstamos.
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+                      </td>
+                    </tr>
+                  )}
+                </AnimatePresence>
+              </motion.tbody>
             </table>
           </div>
           

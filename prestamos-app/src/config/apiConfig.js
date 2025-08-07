@@ -1,16 +1,13 @@
-// In development, we use the Vite proxy to avoid CORS issues
-// In production, we'll use the environment variable
-const BASE_URL = import.meta.env.PROD 
-  ? import.meta.env.VITE_API_BASE_URL 
-  : ''; // Empty string means relative to the current domain
-
+// API base configuration
 const API_URLS = {
-  BASE_URL,
-  CUENTAS: "/cuentas",
-  CLIENTES: "/clientes",
-  PRESTAMOS: "/prestamos",
-  PAGOS: "/pagos",
-  AUTH: "/auth",  
+  // In development, these will be prefixed with /api and proxied to the backend
+  // In production, they will use the VITE_API_BASE_URL from environment variables
+  BASE_URL: import.meta.env.VITE_API_BASE_URL || '',
+  CUENTAS: "/api/cuentas",
+  CLIENTES: "/api/clientes",
+  PRESTAMOS: "/api/prestamos",
+  PAGOS: "/api/pagos",
+  AUTH: "/api/auth",
 };
 
 export default API_URLS;

@@ -6,6 +6,7 @@ import Footer from "./layouts/Footer";
 import ClienteForm from "./pages/clientes/ClienteForm";
 import ClienteDetail from "./pages/clientes/ClienteDetail";
 import ClienteList from "./pages/clientes/ClienteList";
+import ClientePdfViewer from "./pages/clientes/ClientePdfViewer";
 import Dashboard from "./pages/dashboard/Dashboard";
 import PrestamosPage from "./pages/prestamos/PrestamosPage";
 import Login from "./pages/auth/Login";
@@ -48,6 +49,7 @@ function App() {
                 <Route path="/nuevo-cliente" element={<ClienteForm />} />
                 <Route path="/cliente-info/:id" element={<ClienteDetail />} />
                 <Route path="/editar-cliente/:id" element={<ClienteForm />} />
+                <Route path="/cliente-pdf/:id" element={<ClientePdfViewer />} />
                 <Route path="/prestamos" element={<PrestamosPage />} />
                 <Route path="/pagos" element={<PagosPage />} />
                 <Route path="/pagos/:prestamoId" element={<PagosPage />} />

@@ -47,7 +47,10 @@ export const usePrestamoStore = create(devtools((set, get) => ({
   addPrestamo: async (prestamoData) => {
     set({ isLoading: true, error: null });
     try {
-      const nuevoPrestamo = await crearPrestamo(prestamoData);
+      const { data: nuevoPrestamo, error } = await crearPrestamo(prestamoData);
+      if (error) {
+        throw new Error(error);
+      }
       set((state) => ({
         prestamos: [...state.prestamos, nuevoPrestamo],
         isLoading: false,

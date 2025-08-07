@@ -1,6 +1,8 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiX, FiUser, FiMail, FiCreditCard, FiDollarSign, FiCalendar, FiClock, FiCheckCircle, FiAlertCircle, FiInfo } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiX, FiUser, FiMail, FiCreditCard, FiDollarSign, FiCalendar, FiClock, FiCheckCircle, FiAlertCircle, FiInfo, FiFileText } from "react-icons/fi";
+import ClientePdfButton from "../pdf/ClientePdfButton";
 import formatCurrency from "../../utils/formatCurrency";
 
 const ModalDetallesCliente = ({ cliente, onClose, formatDate }) => {
@@ -28,20 +30,32 @@ const ModalDetallesCliente = ({ cliente, onClose, formatDate }) => {
       >
         {/* Header */}
         <div className="sticky top-0 z-10 p-6 bg-gray-800/80 backdrop-blur-sm border-b border-gray-700/50 rounded-t-2xl">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
                 Detalles del Cliente
               </h2>
               <p className="text-sm text-gray-400 mt-1">ID: {cliente.id}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors"
-              aria-label="Cerrar"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <ClientePdfButton 
+                clienteId={cliente.id} 
+                clienteName={cliente.nombre || 'Cliente'}
+                variant="outline"
+                size="sm"
+                className="hidden sm:flex items-center gap-2"
+              >
+                <FiFileText className="w-4 h-4" />
+                <span>Exportar PDF</span>
+              </ClientePdfButton>
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-full transition-colors"
+                aria-label="Cerrar"
+              >
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -155,25 +169,56 @@ const ModalDetallesCliente = ({ cliente, onClose, formatDate }) => {
 
         {/* Footer */}
         <div className="sticky bottom-0 p-4 bg-gray-900/80 backdrop-blur-sm border-t border-gray-800/50 rounded-b-2xl">
-          <div className="flex justify-end space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
-            >
-              Cerrar
-            </button>
-            <button
-              onClick={() => {
-                // Aquí podrías agregar la lógica para editar el cliente
-                console.log('Editar cliente:', cliente.id);
-              }}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              Editar Cliente
-            </button>
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-3">
+              <ClientePdfButton 
+                clienteId={cliente.id}
+                clienteName={cliente.nombre}
+                variant="ghost"
+                size="md"
+              />
+              <Link 
+                 to={`/cliente-pdf/${cliente.id}`}
+                 className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors inline-flex items-center"
+               >
+                 <FiFileText className="mr-2" />
+                 Ver PDF Completo
+               </Link>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+              >
+                Cerrar
+              </button>
+              <button
+                onClick={() => {
+                  // Aquí podrías agregar la lógica para editar el cliente
+                  console.log('Editar cliente:', cliente.id);
+                }}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                Editar Cliente
+              </button>
+            </div>
           </div>
         </div>
       </motion.div>
+      
+      {/* Floating Action Button for Mobile */}
+      <div className="fixed right-6 bottom-6 z-50 sm:hidden">
+        <ClientePdfButton 
+          clienteId={cliente.id} 
+          clienteName={cliente.nombre || 'Cliente'}
+          variant="primary"
+          size="lg"
+          className="flex items-center justify-center w-14 h-14 rounded-full shadow-lg shadow-blue-500/20"
+          iconOnly
+        >
+          <FiFileText className="w-6 h-6" />
+        </ClientePdfButton>
+      </div>
     </div>
   );
 };

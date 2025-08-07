@@ -1,4 +1,6 @@
 import axios from "./axiosConfig";
+import { Prestamo } from "../types/prestamoType";
+import API_URLS from "../config/apiConfig";
 
 // Endpoint base para pagos
 const PAGOS_ENDPOINT = '/api/pagos';
@@ -55,6 +57,37 @@ export const obtenerTodosLosPagos = async (): Promise<Pago[]> => {
     return [];
   }
   return data || [];
+};
+
+/**
+ * Verifica el estado de un préstamo y lo actualiza si está completamente pagado.
+ * @param prestamoId - ID del préstamo a verificar.
+ * @returns El préstamo actualizado o null si ocurre un error.
+ */
+export const verificarYActualizarEstadoPrestamo = async (prestamoId: number): Promise<Prestamo | null> => {
+  try {
+    // 1. Obtener el monto restante desde el endpoint de préstamos
+    const montoRestanteResponse = await axios.get<{ montoRestante: number }>(`${API_URLS.PRESTAMOS}/${prestamoId}/monto-restante`);
+    const montoRestante = montoRestanteResponse.data.montoRestante;
+
+    // 2. Si el monto restante es 0 o menos, actualizar el estado a PAGADO
+    if (montoRestante <= 0) {
+      const estadoRequest = { estado: 'PAGADO' };
+      const actualizarResponse = await axios.put<Prestamo>(
+        `${API_URLS.PRESTAMOS}/${prestamoId}/estado`,
+        estadoRequest
+      );
+      return actualizarResponse.data; // Devuelve el préstamo actualizado
+    }
+
+    // 3. Si no, obtener y devolver el estado actual del préstamo sin cambios
+    const prestamoActualResponse = await axios.get<Prestamo>(`${API_URLS.PRESTAMOS}/${prestamoId}`);
+    return prestamoActualResponse.data;
+
+  } catch (error: any) {
+    console.error(`Error al verificar y actualizar estado para préstamo ${prestamoId}:`, error.response?.data || error.message);
+    return null;
+  }
 };
 
 /**

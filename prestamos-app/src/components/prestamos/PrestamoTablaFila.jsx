@@ -1,7 +1,8 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { FiChevronDown, FiEdit, FiTrash2, FiRefreshCw, FiEye, FiMoreVertical, FiX, FiAlertTriangle } from "react-icons/fi";
 
-const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEstado, onActualizarPrestamo }) => {
+const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEstado, onActualizarPrestamo, variants }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -39,7 +40,14 @@ const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEs
 
   return (
     <>
-      <tr className="border-t border-gray-700/50 hover:bg-gray-800/30 transition-colors">
+      <motion.tr 
+        variants={variants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        layout
+        className="border-t border-gray-700/50 hover:bg-gray-800/30 transition-colors"
+      >
         {/* ID */}
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="text-sm font-medium text-gray-100">#{prestamo.id}</div>
@@ -148,7 +156,7 @@ const PrestamoTablaFila = ({ prestamo, onVerDetalles, onEliminar, onActualizarEs
             </button>
           </div>
         </td>
-      </tr>
+      </motion.tr>
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
